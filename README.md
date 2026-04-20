@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # ZonaVetsa - Portal Digital SMK Veteran 1 Sukoharjo
 
 <p align="center">
@@ -145,3 +146,7 @@ MIT License
 <p align="center">
   Made with ❤️ for education
 </p>
+=======
+# zonavetsa
+Pembelajaran berbasis web
+>>>>>>> 95318233f9c0b209d1731513d43c9564b7e827de
