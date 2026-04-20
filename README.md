@@ -139,9 +139,10 @@ MIT License
 
 ## 👨‍💻 Developer
 
-- **SMK Veteran 1 Sukoharjo**
+- @Daniekmz
 
 ---
+this project is for final semester assignments
 
 <p align="center">
   Made with ❤️ by me
