@@ -1,5 +1,5 @@
-<<<<<<< HEAD
-# ZonaVetsa - Portal Digital SMK Veteran 1 Sukoharjo
+
+# ZonaVetsaNext - Portal Digital 
 
 <p align="center">
   <img src="public/gambar/favicon-32x32.png" alt="ZonaVetsa Logo" width="64" height="64" />
