@@ -1,0 +1,94 @@
+# ZonaVetsa .gitignore
+
+# Dependencies
+node_modules/
+.pnpm-store/
+.npm/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Environment
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+
+# Next.js / TypeScript
+.next/
+out/
+dist/
+build/
+.turbo/
+*.tsbuildinfo
+next-env.d.ts
+
+# Deployment
+.vercel/
+
+# Supabase local development
+supabase/
+.branches/
+
+# Test / coverage
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# IDE
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+.history/
+
+.idea/
+*.iml
+*.ipr
+*.iws
+.out/
+
+# OS junk
+.DS_Store
+.apdisk
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.fuse_hidden
+.directory
+Trash-*
+
+# Cache / temporary files
+.cache/
+tmp/
+temp/
+*.swp
+*.swo
+*~
+*.orig
+*.backup
+*.pem
+
+# Optional Python cache
+.mypy_cache/
+.pytest_cache/
+.hypothesis/
+
+# Tooling cache
+.eslintcache
+
+# Package artifacts
+*.tgz

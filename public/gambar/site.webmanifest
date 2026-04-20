@@ -1,0 +1,40 @@
+{
+  "name": "ZonaVetsa - Portal Digital SMK Veteran 1 Sukoharjo",
+  "short_name": "ZonaVetsa",
+  "description": "Portal Digital SMK Veteran 1 Sukoharjo - Akses materi pembelajaran, tugas, dan absensi",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#002b5b",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/gambar/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/gambar/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["education", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Dashboard Siswa",
+      "url": "/dashboard/siswa"
+    },
+    {
+      "name": "Dashboard Guru",
+      "url": "/dashboard/guru"
+    },
+    {
+      "name": "Absensi QR",
+      "url": "/dashboard/guru/qr-absen"
+    }
+  ]
+}
