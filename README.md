@@ -144,9 +144,6 @@ MIT License
 ---
 
 <p align="center">
-  Made with ❤️ for education
+  Made with ❤️ by me
 </p>
-=======
-# zonavetsa
-Pembelajaran berbasis web
->>>>>>> 95318233f9c0b209d1731513d43c9564b7e827de
+
