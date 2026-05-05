@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, EyeOff, GraduationCap, KeyRound } from "lucide-react";
+import { Eye, EyeOff, GraduationCap, IdCard, Lock } from "lucide-react";
 import { loginSiswaSchema, type LoginSiswaInput } from "@/lib/schemas";
 import { createClient } from "@/lib/supabase";
 import { logLogin } from "@/lib/activity-logger";
@@ -75,7 +75,8 @@ export default function LoginSiswaPage() {
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         <div className="space-y-2">
-          <Label htmlFor="nis" className="text-slate-700 dark:text-slate-200">
+          <Label htmlFor="nis" className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 dark:text-slate-200">
+            <IdCard size={15} className="text-teal" aria-hidden="true" />
             NIS
           </Label>
           <Input id="nis" type="text" placeholder="Masukkan NIS Anda" {...register("nis")} />
@@ -83,7 +84,8 @@ export default function LoginSiswaPage() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="password" className="text-slate-700 dark:text-slate-200">
+          <Label htmlFor="password" className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 dark:text-slate-200">
+            <Lock size={15} className="text-teal" aria-hidden="true" />
             Password
           </Label>
           <div className="relative">
@@ -97,9 +99,11 @@ export default function LoginSiswaPage() {
             <button
               type="button"
               onClick={() => setShowPassword((prev) => !prev)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-primary dark:hover:bg-slate-800"
+              aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-xl p-2 text-slate-400 transition-colors hover:bg-slate-100 dark:bg-slate-800 hover:text-teal dark:hover:bg-slate-800"
+              style={{ minHeight: 44, minWidth: 44 }}
             >
-              {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+              {showPassword ? <EyeOff size={17} aria-hidden="true" /> : <Eye size={17} aria-hidden="true" />}
             </button>
           </div>
           {errors.password ? <p className="text-xs font-medium text-danger">{errors.password.message}</p> : null}
@@ -111,12 +115,12 @@ export default function LoginSiswaPage() {
           </div>
         ) : null}
 
-        <div className="rounded-[22px] border border-sky-100 bg-sky-50/70 p-4 text-sm font-medium leading-7 text-slate-600 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-slate-300">
+        <div className="rounded-2xl border border-teal-100 bg-teal-50/60 p-4 text-sm font-medium leading-relaxed text-slate-600 dark:border-teal-500/20 dark:bg-teal-500/10 dark:text-slate-300">
           {getDailyRotatingCopy("auth")}
         </div>
 
-        <Button type="submit" variant="secondary" size="lg" className="w-full" disabled={isLoading}>
-          <KeyRound size={18} />
+        <Button type="submit" size="lg" className="w-full bg-teal hover:bg-teal-600 text-white border-0" disabled={isLoading}>
+          <GraduationCap size={18} aria-hidden="true" />
           {isLoading ? "Memverifikasi..." : "Masuk ke Dashboard"}
         </Button>
 

@@ -165,7 +165,7 @@ export default function GuruKelasPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-primary">Kelola Kelas</h2>
-        <p className="text-gray-500">Pilih kelas untuk melihat siswa</p>
+        <p className="text-slate-500 dark:text-slate-400">Pilih kelas untuk melihat siswa</p>
       </div>
 
       {/* Class Cards */}
@@ -174,7 +174,7 @@ export default function GuruKelasPage() {
           <div
             key={cls.id}
             onClick={() => selectClass(cls)}
-            className={`bg-white rounded-xl p-6 shadow-sm cursor-pointer transition-all hover:-translate-y-1 hover:shadow-md ${
+            className={`bg-white dark:bg-slate-900 rounded-xl p-6 shadow-sm cursor-pointer transition-all hover:-translate-y-1 hover:shadow-md ${
               selectedClass?.id === cls.id
                 ? "border-2 border-primary"
                 : "border-2 border-transparent"
@@ -183,8 +183,8 @@ export default function GuruKelasPage() {
             <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-3">
               <Users size={24} className="text-primary" />
             </div>
-            <h3 className="font-bold text-center text-gray-800">{cls.name}</h3>
-            <p className="text-sm text-gray-500 text-center mt-1">
+            <h3 className="font-bold text-center text-slate-800 dark:text-slate-100">{cls.name}</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 text-center mt-1">
               Klik untuk melihat siswa
             </p>
           </div>
@@ -193,10 +193,10 @@ export default function GuruKelasPage() {
 
       {/* Student List */}
       {selectedClass && (
-        <div className="bg-white rounded-xl p-6 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <h3 className="font-bold text-lg text-gray-800">
+              <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">
                 Siswa - {selectedClass.name}
               </h3>
               <div className="flex items-center gap-1.5 px-2.5 py-1 bg-green-50 text-green-600 rounded-full border border-green-100 animate-pulse">
@@ -224,45 +224,45 @@ export default function GuruKelasPage() {
           </div>
 
           {filteredStudents.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-slate-500 dark:text-slate-400">
               <Users size={48} className="mx-auto mb-3 opacity-50" />
               <p>Tidak ada siswa ditemukan</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50">
+                <thead className="bg-gray-50 dark:bg-slate-800">
                   <tr>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">
                       No
                     </th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">
                       NIS
                     </th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">
                       Nama
                     </th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">
                       Email
                     </th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">
                       Telepon
                     </th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">
                       Aksi
                     </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
                   {filteredStudents.map((student, index) => (
-                    <tr key={student.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm text-gray-600">
+                    <tr key={student.id} className="hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-800">
+                      <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
                         {student.absen || index + 1}
                       </td>
-                      <td className="px-4 py-3 text-sm font-medium text-gray-800">
+                      <td className="px-4 py-3 text-sm font-medium text-slate-800 dark:text-slate-100">
                         {student.nis}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-800 relative">
+                      <td className="px-4 py-3 text-sm text-slate-800 dark:text-slate-100 relative">
                         <div className="flex items-center gap-2">
                           {student.name}
                           {onlineUsers.has(student.nis) && (
@@ -273,16 +273,16 @@ export default function GuruKelasPage() {
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-500">
+                      <td className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
                         {student.email || "-"}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-500">
+                      <td className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
                         {student.phone || "-"}
                       </td>
                       <td className="px-4 py-3">
                         <button
                           onClick={() => handleResetPassword(student)}
-                          className="p-2 hover:bg-gray-100 rounded-lg text-warning"
+                          className="p-2 hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-slate-800 rounded-lg text-warning"
                           title="Reset Password"
                         >
                           <Key size={16} />

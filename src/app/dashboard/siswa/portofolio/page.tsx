@@ -7,6 +7,7 @@ import {
   FileImage,
   FileText,
   ExternalLink,
+  Copy,
   Download,
   ThumbsUp,
   MessageSquare,
@@ -29,6 +30,12 @@ import { PortfolioFilePreview, getFileNameFromUrl, getPortfolioFileKind } from "
 import { toast } from "@/components/ui/toast";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { notifyPortfolioUpload } from "@/lib/notifications";
+import {
+  buildPortfolioPublicUrl,
+  getPortfolioPrimaryUrl,
+  isHtmlPortfolioFile,
+  slugifyPortfolioSegment,
+} from "@/lib/portfolio-links";
 import type { Class, PortfolioComment, PortfolioItem, PortfolioLike, Student } from "@/types";
 
 interface StudentSession {
@@ -112,6 +119,56 @@ export default function PortofolioPage() {
       unit += 1;
     }
     return `${value.toFixed(value >= 10 || unit === 0 ? 0 : 1)} ${units[unit]}`;
+  };
+
+  const buildUniqueHtmlSlug = async (
+    supabase: ReturnType<typeof createClient>,
+    uploaderName: string,
+    fallbackCode: string
+  ) => {
+    const baseSlug = slugifyPortfolioSegment(uploaderName) || `siswa-${fallbackCode}`;
+    const { data, error } = await supabase
+      .from("portofolios")
+      .select("public_slug")
+      .ilike("public_slug", `${baseSlug}%`);
+
+    if (error) throw error;
+
+    const existingSlugs = new Set(
+      ((data || []) as { public_slug?: string | null }[])
+        .map((item) => item.public_slug || "")
+        .filter(Boolean)
+    );
+
+    if (!existingSlugs.has(baseSlug)) {
+      return baseSlug;
+    }
+
+    let counter = 2;
+    let candidate = `${baseSlug}_${counter}`;
+    while (existingSlugs.has(candidate)) {
+      counter += 1;
+      candidate = `${baseSlug}_${counter}`;
+    }
+
+    return candidate;
+  };
+
+  const handleCopyPublicLink = async (item: PortfolioFeedItem) => {
+    if (!item.public_slug) {
+      toast("Link publik belum tersedia untuk karya ini", "error");
+      return;
+    }
+
+    try {
+      const publicUrl = buildPortfolioPublicUrl(item.public_slug);
+      if (!publicUrl) throw new Error("Public URL unavailable");
+      await navigator.clipboard.writeText(publicUrl);
+      toast("Link karya berhasil disalin", "success");
+    } catch (error) {
+      console.error("Copy public link failed:", error);
+      toast("Gagal menyalin link karya", "error");
+    }
   };
 
   const handleDownloadFile = async (item: PortfolioFeedItem) => {
@@ -352,9 +409,10 @@ export default function PortofolioPage() {
     const supabase = createClient();
 
     try {
-      const extension = selectedFile.name.split(".").pop() || "file";
+      const extension = (selectedFile.name.split(".").pop() || "file").toLowerCase();
       const loweredName = selectedFile.name.toLowerCase();
       const isHtmlFile = selectedFile.type === "text/html" || loweredName.endsWith(".html") || loweredName.endsWith(".htm");
+      const publicSlug = isHtmlFile ? await buildUniqueHtmlSlug(supabase, student.name, student.nis) : null;
       const safeTitle = title
         .trim()
         .toLowerCase()
@@ -371,22 +429,42 @@ export default function PortofolioPage() {
       if (uploadError) throw uploadError;
 
       const { data: publicUrlData } = supabase.storage.from("files").getPublicUrl(filePath);
-      const { error: insertError } = await supabase.from("portofolios").insert({
-        student_nis: student.nis,
-        title: title.trim(),
-        description: description.trim(),
-        image_url: publicUrlData.publicUrl,
-        visibility_scope: uploadScope,
-        uploader_name: student.name,
-        uploader_class_id: student.last_class_id || student.class_id || null,
-        uploader_class_name: viewerClassName,
-        likes: 0,
-        comments: 0,
-      });
+      const { data: insertedPortfolio, error: insertError } = await supabase
+        .from("portofolios")
+        .insert({
+          student_nis: student.nis,
+          title: title.trim(),
+          description: description.trim(),
+          image_url: publicUrlData.publicUrl,
+          public_slug: publicSlug,
+          visibility_scope: uploadScope,
+          uploader_name: student.name,
+          uploader_class_id: student.last_class_id || student.class_id || null,
+          uploader_class_name: viewerClassName,
+          likes: 0,
+          comments: 0,
+        })
+        .select("id, public_slug")
+        .single();
       if (insertError) throw insertError;
 
       await notifyPortfolioUpload(student.last_teacher_kode, student.nis, student.name, title.trim());
-      toast("Karya berhasil diupload", "success");
+      if (isHtmlFile && insertedPortfolio?.public_slug) {
+        const publicUrl = buildPortfolioPublicUrl(insertedPortfolio.public_slug);
+        if (publicUrl) {
+          try {
+            await navigator.clipboard.writeText(publicUrl);
+            toast("Karya HTML berhasil diupload. Link publik langsung disalin.", "success");
+          } catch (error) {
+            console.error("Auto copy public link failed:", error);
+            toast("Karya HTML berhasil diupload", "success");
+          }
+        } else {
+          toast("Karya HTML berhasil diupload", "success");
+        }
+      } else {
+        toast("Karya berhasil diupload", "success");
+      }
       setIsModalOpen(false);
       resetForm();
       await loadPortofolios();
@@ -589,208 +667,254 @@ export default function PortofolioPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <Briefcase size={28} />
+    <div className="space-y-4">
+      <div className="mx-auto max-w-2xl lg:max-w-none">
+        <div className="flex flex-col gap-4 rounded-2xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm sm:p-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary shrink-0">
+              <Briefcase size={24} />
+            </div>
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-slate-100">Galeri Karya</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400 hidden sm:block">Upload karya kamu, lalu tampilkan ke kelas atau seluruh pengguna.</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800">Galeri Karya</h2>
-            <p className="text-gray-500">Upload karya kamu, lalu tampilkan ke kelas atau seluruh pengguna.</p>
-          </div>
+          <Button onClick={() => setIsModalOpen(true)} className="hidden sm:flex items-center gap-2 bg-primary hover:bg-primary/90">
+            <Plus size={18} />
+            Upload Karya Baru
+          </Button>
         </div>
-        <Button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 bg-primary hover:bg-primary/90">
-          <Plus size={18} />
-          Upload Karya Baru
-        </Button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-gray-100 bg-white p-3 shadow-sm">
-        <Button variant={visibilityFilter === "all" ? "default" : "outline"} onClick={() => setVisibilityFilter("all")} className="h-9">
-          Semua
-        </Button>
-        <Button variant={visibilityFilter === "class" ? "default" : "outline"} onClick={() => setVisibilityFilter("class")} className="h-9">
-          <Users size={14} className="mr-2" />
-          Kelas
-        </Button>
-        <Button variant={visibilityFilter === "global" ? "default" : "outline"} onClick={() => setVisibilityFilter("global")} className="h-9">
-          <Globe size={14} className="mr-2" />
-          Global
-        </Button>
+      <div className="mx-auto max-w-2xl lg:max-w-none">
+        <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-sm">
+          <Button variant={visibilityFilter === "all" ? "default" : "outline"} onClick={() => setVisibilityFilter("all")} className="h-9">
+            Semua
+          </Button>
+          <Button variant={visibilityFilter === "class" ? "default" : "outline"} onClick={() => setVisibilityFilter("class")} className="h-9">
+            <Users size={14} className="mr-2" />
+            Kelas
+          </Button>
+          <Button variant={visibilityFilter === "global" ? "default" : "outline"} onClick={() => setVisibilityFilter("global")} className="h-9">
+            <Globe size={14} className="mr-2" />
+            Global
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
-        <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="mx-auto max-w-2xl lg:max-w-none grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-72 animate-pulse overflow-hidden rounded-2xl bg-white shadow-sm">
-              <div className="h-40 bg-gray-200" />
+            <div key={i} className="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm animate-pulse">
+              <div className="flex items-center gap-3 p-4 pb-2">
+                <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-slate-700" />
+                <div className="space-y-2 flex-1">
+                  <div className="h-4 w-1/3 rounded bg-gray-200 dark:bg-slate-700" />
+                  <div className="h-3 w-1/4 rounded bg-gray-200 dark:bg-slate-700" />
+                </div>
+              </div>
+              <div className="h-56 bg-gray-200 dark:bg-slate-700 mx-4 rounded-xl" />
               <div className="space-y-3 p-4">
-                <div className="h-5 w-3/4 rounded bg-gray-200" />
-                <div className="h-4 w-1/2 rounded bg-gray-200" />
+                <div className="h-5 w-2/3 rounded bg-gray-200 dark:bg-slate-700" />
+                <div className="h-4 w-full rounded bg-gray-200 dark:bg-slate-700" />
               </div>
             </div>
           ))}
         </div>
       ) : filteredItems.length === 0 ? (
-        <div className="rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 py-20 text-center">
+        <div className="mx-auto max-w-2xl lg:max-w-none rounded-2xl border-2 border-dashed border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-20 text-center">
           <FileImage size={48} className="mx-auto mb-4 text-gray-400" />
-          <h3 className="text-lg font-bold text-gray-700">Belum Ada Karya</h3>
-          <p className="mx-auto mt-2 max-w-sm text-gray-500">Upload sertifikat, hasil projek, atau dokumentasi tugas agar bisa dilihat publik.</p>
+          <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200">Belum Ada Karya</h3>
+          <p className="mx-auto mt-2 max-w-sm text-slate-500 dark:text-slate-400">Upload sertifikat, hasil projek, atau dokumentasi tugas agar bisa dilihat publik.</p>
           <Button onClick={() => setIsModalOpen(true)} className="mt-6 bg-primary hover:bg-primary/90">
             <Upload size={16} className="mr-2" />
             Mulai Upload
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filteredItems.map((item) => (
-            <div key={item.id} className="group flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:shadow-lg">
-              <div className="relative h-48 overflow-hidden bg-gray-100">
-                {getPortfolioFileKind(item.image_url) === "image" ? (
-                  <img src={item.image_url} alt={item.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                ) : (
-                  <div className="flex h-full w-full flex-col items-center justify-center gap-2 px-4 text-center">
-                    <FileText size={44} className="text-primary" />
-                    <p className="line-clamp-2 text-sm font-semibold text-gray-700">{item.title}</p>
-                    <p className="text-xs text-gray-500">
-                      {getPortfolioFileKind(item.image_url) === "html" ? "Preview HTML5 tersedia" : "File non-gambar"}
-                    </p>
-                  </div>
-                )}
-                <div className="absolute left-3 top-3 inline-flex items-center rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white">
-                  {item.visibility_scope === "global" ? (
-                    <>
-                      <Globe size={12} className="mr-1" /> Global
-                    </>
-                  ) : (
-                    <>
-                      <Users size={12} className="mr-1" /> Kelas
-                    </>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex flex-1 flex-col p-5">
-                <div className="mb-3 flex items-center gap-3">
+        <>
+          <div className="mx-auto max-w-2xl lg:max-w-none grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+            {filteredItems.map((item) => (
+              <div key={item.id} className="overflow-hidden rounded-2xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm transition-shadow duration-200 hover:shadow-md">
+                {/* Post Header */}
+                <div className="flex items-center gap-3 px-4 pt-4 pb-2 sm:px-5">
                   <Avatar src={item.uploader_avatar} name={item.uploader_name || item.student_nis} size="md" />
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-bold text-gray-800">{item.uploader_name || item.student_nis}</p>
-                    <p className="truncate text-xs text-gray-500">{item.uploader_class_name || "-"}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold text-slate-800 dark:text-slate-100">{item.uploader_name || item.student_nis}</p>
+                    <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                      <span>{item.uploader_class_name || "-"}</span>
+                      <span>·</span>
+                      <span>{new Date(item.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</span>
+                    </div>
                   </div>
-                </div>
-
-                <h3 className="break-words text-base font-bold text-gray-800 sm:text-lg">{item.title}</h3>
-                <p className="mb-3 mt-1 break-words text-sm leading-relaxed text-gray-600">{item.description || "Tanpa deskripsi"}</p>
-                <div className="mb-4 flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setSelectedDetailItem(item)}>
-                    Lihat Detail
-                  </Button>
-                  <Button variant="outline" size="sm" disabled={isDownloadLoadingId === item.id} onClick={() => void handleDownloadFile(item)}>
-                    <Download size={14} className="mr-2" />
-                    {isDownloadLoadingId === item.id ? "Mengunduh..." : "Unduh"}
-                  </Button>
-                  <a
-                    href={item.image_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center rounded-md border border-gray-200 px-3 text-sm font-medium text-gray-700 transition hover:bg-gray-100"
-                  >
-                    <ExternalLink size={14} className="mr-2" />
-                    Buka File
-                  </a>
-                </div>
-
-                <div className="mb-4 flex items-center gap-2 border-t border-gray-100 pt-4">
-                  <Button variant={item.liked_by_me ? "default" : "outline"} size="sm" disabled={isLikeLoadingId === item.id} onClick={() => void handleToggleLike(item)}>
-                    <ThumbsUp size={14} className="mr-2" />
-                    {item.like_count}
-                  </Button>
-                  <span className="flex items-center gap-1 text-xs font-medium text-gray-500">
-                    <MessageSquare size={14} /> {item.comment_count}
+                  <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 shrink-0">
+                    {item.visibility_scope === "global" ? <><Globe size={11} /> Global</> : <><Users size={11} /> Kelas</>}
                   </span>
                 </div>
 
-                <div className="space-y-2 border-t border-gray-100 pt-4">
-                  <div className="max-h-40 space-y-2 overflow-auto pr-1">
-                    {item.comments_list.slice(0, 6).map((comment) => (
-                      <div key={comment.id} className="rounded-lg bg-gray-50 px-3 py-2">
-                        <div className="flex items-start gap-2">
-                          <Avatar src={comment.avatar_url} name={comment.commenter_name} size="sm" />
-                          <div className="min-w-0">
-                            <p className="text-xs font-semibold text-gray-700">
-                              {comment.commenter_name} · {comment.commenter_class_name || (comment.commenter_role === "guru" ? "Guru" : "-")}
+                {/* Post Body */}
+                <div className="px-4 pb-3 sm:px-5">
+                  <h3 className="break-words text-[15px] font-bold text-slate-800 dark:text-slate-100 sm:text-base">{item.title}</h3>
+                  <p className="mt-1 break-words text-sm leading-relaxed text-slate-500 dark:text-slate-400 line-clamp-3">{item.description || "Tanpa deskripsi"}</p>
+                </div>
+
+                {/* Media Preview */}
+                <div className="relative mx-4 mb-3 overflow-hidden rounded-xl bg-gray-100 dark:bg-slate-800 sm:mx-5 cursor-pointer" onClick={() => setSelectedDetailItem(item)}>
+                  {getPortfolioFileKind(item.image_url) === "image" ? (
+                    <img src={item.image_url} alt={item.title} className="w-full max-h-[400px] object-cover" />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center gap-2 px-4 py-10 text-center">
+                      <FileText size={40} className="text-primary" />
+                      <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
+                        {getPortfolioFileKind(item.image_url) === "html" ? "Preview HTML5 tersedia" : "File non-gambar"}
+                      </p>
+                      <span className="text-xs text-primary font-medium">Klik untuk lihat detail</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Buttons Row */}
+                <div className="flex items-center justify-between border-t border-gray-100 dark:border-slate-800 px-2 sm:px-3">
+                  <div className="flex items-center">
+                    <button
+                      type="button"
+                      disabled={isLikeLoadingId === item.id}
+                      onClick={() => void handleToggleLike(item)}
+                      className={`flex items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium transition-colors min-h-[48px] ${
+                        item.liked_by_me
+                          ? "text-primary font-bold"
+                          : "text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      <ThumbsUp size={18} className={item.liked_by_me ? "fill-primary" : ""} />
+                      <span>{item.like_count > 0 ? item.like_count : "Suka"}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="flex items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors min-h-[48px]"
+                      onClick={() => document.getElementById(`comment-input-siswa-${item.id}`)?.focus()}
+                    >
+                      <MessageSquare size={18} />
+                      <span>{item.comment_count > 0 ? item.comment_count : "Komentar"}</span>
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <a
+                      href={getPortfolioPrimaryUrl(item)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center rounded-lg p-2.5 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors min-h-[44px] min-w-[44px]"
+                      title={isHtmlPortfolioFile(item.image_url) && item.public_slug ? "Buka Link" : "Buka File"}
+                    >
+                      <ExternalLink size={18} />
+                    </a>
+                    {isHtmlPortfolioFile(item.image_url) && item.public_slug && (
+                      <button type="button" onClick={() => void handleCopyPublicLink(item)} className="flex items-center justify-center rounded-lg p-2.5 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors min-h-[44px] min-w-[44px]" title="Copy Link">
+                        <Copy size={18} />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      disabled={isDownloadLoadingId === item.id}
+                      onClick={() => void handleDownloadFile(item)}
+                      className="flex items-center justify-center rounded-lg p-2.5 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors min-h-[44px] min-w-[44px]"
+                      title="Unduh File"
+                    >
+                      <Download size={18} />
+                    </button>
+                    {item.student_nis === viewerNis && (
+                      <button
+                        type="button"
+                        disabled={isDeleteLoadingId === item.id}
+                        onClick={() => void handleDeletePortfolio(item)}
+                        className="flex items-center justify-center rounded-lg p-2.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors min-h-[44px] min-w-[44px]"
+                        title="Hapus Karya"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Comments Section */}
+                {item.comments_list.length > 0 && (
+                  <div className="border-t border-gray-100 dark:border-slate-800 px-4 py-3 sm:px-5 space-y-3">
+                    {item.comments_list.slice(0, 4).map((comment) => (
+                      <div key={comment.id} className="flex items-start gap-2.5">
+                        <Avatar src={comment.avatar_url} name={comment.commenter_name} size="sm" />
+                        <div className="min-w-0 flex-1">
+                          <div className="rounded-2xl bg-gray-50 dark:bg-slate-800 px-3.5 py-2.5">
+                            <p className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                              {comment.commenter_name}
+                              <span className="ml-1.5 font-normal text-slate-400">{comment.commenter_class_name || (comment.commenter_role === "guru" ? "Guru" : "")}</span>
                             </p>
                             {editingCommentId === comment.id ? (
-                              <div className="mt-1 space-y-2">
-                                <Input value={editingCommentText} onChange={(event) => setEditingCommentText(event.target.value)} placeholder="Ubah komentar..." />
+                              <div className="mt-1.5 space-y-2">
+                                <Input value={editingCommentText} onChange={(e) => setEditingCommentText(e.target.value)} placeholder="Ubah komentar..." className="text-sm" />
                                 <div className="flex items-center gap-2">
-                                  <Button size="sm" disabled={isCommentActionLoadingId === comment.id} onClick={() => void handleUpdateComment(comment)}>
-                                    <Check size={13} className="mr-1" />
-                                    Simpan
-                                  </Button>
-                                  <Button variant="outline" size="sm" onClick={cancelEditComment}>
-                                    <X size={13} className="mr-1" />
-                                    Batal
-                                  </Button>
+                                  <button type="button" disabled={isCommentActionLoadingId === comment.id} onClick={() => void handleUpdateComment(comment)} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary/90 min-h-[36px]">Simpan</button>
+                                  <button type="button" onClick={cancelEditComment} className="rounded-lg px-3 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 min-h-[36px]">Batal</button>
                                 </div>
                               </div>
                             ) : (
-                              <p className="break-words text-sm text-gray-600">{comment.comment_text}</p>
-                            )}
-                            {comment.commenter_role === "siswa" && comment.commenter_nis === viewerNis && (
-                              <div className="mt-2 flex items-center gap-2">
-                                <Button variant="outline" size="sm" onClick={() => startEditComment(comment)}>
-                                  <Pencil size={12} className="mr-1" />
-                                  Edit
-                                </Button>
-                                <Button variant="outline" size="sm" disabled={isCommentActionLoadingId === comment.id} onClick={() => void handleDeleteComment(comment)}>
-                                  <Trash2 size={12} className="mr-1" />
-                                  Hapus
-                                </Button>
-                              </div>
+                              <p className="break-words text-sm text-slate-600 dark:text-slate-300 mt-0.5">{comment.comment_text}</p>
                             )}
                           </div>
+                          {comment.commenter_role === "siswa" && comment.commenter_nis === viewerNis && editingCommentId !== comment.id && (
+                            <div className="mt-1 flex items-center gap-3 pl-3">
+                              <button type="button" onClick={() => startEditComment(comment)} className="text-xs font-medium text-slate-400 hover:text-primary transition-colors min-h-[32px]">Edit</button>
+                              <button type="button" disabled={isCommentActionLoadingId === comment.id} onClick={() => void handleDeleteComment(comment)} className="text-xs font-medium text-slate-400 hover:text-red-500 transition-colors min-h-[32px]">Hapus</button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}
-                    {item.comments_list.length === 0 && <p className="text-xs text-gray-400">Belum ada komentar.</p>}
+                    {item.comments_list.length > 4 && (
+                      <button type="button" onClick={() => setSelectedDetailItem(item)} className="text-xs font-medium text-primary hover:underline pl-10 min-h-[32px]">
+                        Lihat semua {item.comments_list.length} komentar
+                      </button>
+                    )}
                   </div>
+                )}
 
-                  <div className="flex items-center gap-2">
-                    <Input
+                {/* Comment Input */}
+                <div className="flex items-center gap-2 border-t border-gray-100 dark:border-slate-800 px-4 py-3 sm:px-5">
+                  <Avatar name="S" size="sm" />
+                  <div className="relative flex-1">
+                    <input
+                      id={`comment-input-siswa-${item.id}`}
                       value={commentDrafts[item.id] || ""}
-                      onChange={(event) => setCommentDrafts((prev) => ({ ...prev, [item.id]: event.target.value }))}
-                      placeholder="Tulis komentar..."
+                      onChange={(e) => setCommentDrafts((prev) => ({ ...prev, [item.id]: e.target.value }))}
+                      onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void handleAddComment(item.id); } }}
+                      placeholder="Tambahkan komentar..."
+                      className="w-full rounded-full border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-2.5 pr-12 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all min-h-[44px]"
                     />
-                    <Button size="icon" disabled={isCommentLoadingId === item.id} onClick={() => void handleAddComment(item.id)}>
-                      <Send size={15} />
-                    </Button>
+                    {(commentDrafts[item.id] || "").trim() && (
+                      <button
+                        type="button"
+                        disabled={isCommentLoadingId === item.id}
+                        onClick={() => void handleAddComment(item.id)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center rounded-full bg-primary p-1.5 text-white hover:bg-primary/90 transition-colors min-h-[32px] min-w-[32px]"
+                      >
+                        <Send size={14} />
+                      </button>
+                    )}
                   </div>
-                </div>
-
-                <div className="mt-4 text-xs text-gray-400">
-                  <div>
-                    {new Date(item.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
-                  </div>
-                  {item.student_nis === viewerNis && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={isDeleteLoadingId === item.id}
-                      onClick={() => void handleDeletePortfolio(item)}
-                      className="mt-2 text-danger hover:text-danger"
-                    >
-                      <Trash2 size={13} className="mr-1" />
-                      Hapus Karya
-                    </Button>
-                  )}
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+
+          {/* Floating Action Button for mobile upload */}
+          <button
+            type="button"
+            onClick={() => setIsModalOpen(true)}
+            className="fixed bottom-20 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg hover:bg-primary/90 transition-all duration-200 hover:scale-105 active:scale-95 sm:hidden"
+            aria-label="Upload Karya Baru"
+          >
+            <Plus size={24} />
+          </button>
+        </>
       )}
 
       <Dialog
@@ -800,97 +924,104 @@ export default function PortofolioPage() {
           if (!open) resetForm();
         }}
       >
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle>Upload Karya Galeri</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="max-w-xl overflow-hidden p-0 sm:max-h-[88vh] max-h-[92dvh]">
+          <div className="flex max-h-[92dvh] flex-col sm:max-h-[88vh]">
+            <DialogHeader className="border-b border-gray-100 dark:border-slate-800 px-5 pb-4 pt-5 sm:px-6">
+              <DialogTitle>Upload Karya Galeri</DialogTitle>
+            </DialogHeader>
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="portfolio-title">Judul Karya</Label>
-              <Input id="portfolio-title" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Contoh: Desain Poster Hari Kartini" />
+            <div className="flex-1 overflow-y-auto px-5 py-4 sm:px-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="portfolio-title">Judul Karya</Label>
+                  <Input id="portfolio-title" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Contoh: Desain Poster Hari Kartini" />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="portfolio-description">Deskripsi</Label>
+                  <textarea
+                    id="portfolio-description"
+                    value={description}
+                    onChange={(event) => setDescription(event.target.value)}
+                    placeholder="Ceritakan singkat isi karya, tools, atau tujuan tugasnya"
+                    className="min-h-[110px] w-full rounded-lg border border-gray-200 dark:border-slate-800/50 bg-white/80 dark:bg-slate-900/80 px-4 py-3 text-sm font-medium transition-all duration-300 placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyber/50"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Cakupan Publikasi</Label>
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="button" variant={uploadScope === "class" ? "default" : "outline"} onClick={() => setUploadScope("class")}>
+                      <Users size={14} className="mr-2" />
+                      Kelas
+                    </Button>
+                    <Button type="button" variant={uploadScope === "global" ? "default" : "outline"} onClick={() => setUploadScope("global")}>
+                      <Globe size={14} className="mr-2" />
+                      Global
+                    </Button>
+                  </div>
+                  <p className="text-xs text-gray-400">Kelas hanya terlihat oleh siswa satu kelas, Global terlihat semua pengguna.</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="portfolio-file">File Karya</Label>
+                  <Input id="portfolio-file" type="file" onChange={handleFileChange} />
+                  <p className="text-xs text-gray-400">Bisa upload semua jenis file. Mendukung HTML5 1 file (HTML+CSS+JS). Maksimal 20MB.</p>
+                  {selectedFile && (selectedFile.name.toLowerCase().endsWith(".html") || selectedFile.name.toLowerCase().endsWith(".htm")) ? (
+                    <p className="text-xs text-blue-600">File HTML akan mendapat link publik langsung yang bisa dibuka dan di-copy setelah upload.</p>
+                  ) : null}
+                </div>
+
+                {previewUrl && (
+                  <div className="overflow-hidden rounded-2xl border border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800">
+                    <img src={previewUrl} alt="Preview karya" className="h-56 w-full object-cover" />
+                  </div>
+                )}
+                {htmlPreviewDoc && (
+                  <div className="space-y-2 overflow-hidden rounded-2xl border border-blue-100 bg-blue-50 p-3">
+                    <p className="text-xs font-medium text-blue-700">Preview HTML5 (single file)</p>
+                    <iframe
+                      title="Preview HTML upload"
+                      srcDoc={htmlPreviewDoc}
+                      className="h-64 w-full rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900"
+                      sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-pointer-lock allow-presentation"
+                    />
+                  </div>
+                )}
+                {selectedFile && !previewUrl && !htmlPreviewDoc && (
+                  <div className="rounded-xl border border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800 px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
+                    <p className="font-semibold text-slate-700 dark:text-slate-200">{selectedFile.name}</p>
+                    <p>Ukuran: {formatFileSize(selectedFile.size)}</p>
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="portfolio-description">Deskripsi</Label>
-              <textarea
-                id="portfolio-description"
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-                placeholder="Ceritakan singkat isi karya, tools, atau tujuan tugasnya"
-                className="min-h-[110px] w-full rounded-lg border border-gray-200/50 bg-white/80 px-4 py-3 text-sm font-medium transition-all duration-300 placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyber/50"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Cakupan Publikasi</Label>
-              <div className="flex gap-2">
-                <Button type="button" variant={uploadScope === "class" ? "default" : "outline"} onClick={() => setUploadScope("class")}>
-                  <Users size={14} className="mr-2" />
-                  Kelas
-                </Button>
-                <Button type="button" variant={uploadScope === "global" ? "default" : "outline"} onClick={() => setUploadScope("global")}>
-                  <Globe size={14} className="mr-2" />
-                  Global
-                </Button>
-              </div>
-              <p className="text-xs text-gray-400">Kelas hanya terlihat oleh siswa satu kelas, Global terlihat semua pengguna.</p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="portfolio-file">File Karya</Label>
-              <Input id="portfolio-file" type="file" onChange={handleFileChange} />
-              <p className="text-xs text-gray-400">Bisa upload semua jenis file. Mendukung HTML5 1 file (HTML+CSS+JS). Maksimal 20MB.</p>
-            </div>
-
-            {previewUrl && (
-              <div className="overflow-hidden rounded-2xl border border-gray-100 bg-gray-50">
-                <img src={previewUrl} alt="Preview karya" className="h-56 w-full object-cover" />
-              </div>
-            )}
-            {htmlPreviewDoc && (
-              <div className="space-y-2 overflow-hidden rounded-2xl border border-blue-100 bg-blue-50 p-3">
-                <p className="text-xs font-medium text-blue-700">Preview HTML5 (single file)</p>
-                <iframe
-                  title="Preview HTML upload"
-                  srcDoc={htmlPreviewDoc}
-                  className="h-64 w-full rounded-lg border border-gray-200 bg-white"
-                  sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-pointer-lock allow-presentation"
-                />
-              </div>
-            )}
-            {selectedFile && !previewUrl && !htmlPreviewDoc && (
-              <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm text-gray-600">
-                <p className="font-semibold text-gray-700">{selectedFile.name}</p>
-                <p>Ukuran: {formatFileSize(selectedFile.size)}</p>
-              </div>
-            )}
+            <DialogFooter className="border-t border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-950 px-5 py-4 sm:px-6">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsModalOpen(false);
+                  resetForm();
+                }}
+              >
+                Batal
+              </Button>
+              <Button onClick={handleUploadPortfolio} disabled={isUploading} className="bg-primary hover:bg-primary/90">
+                {isUploading ? (
+                  <>
+                    <Loader2 size={16} className="mr-2 animate-spin" />
+                    Mengupload...
+                  </>
+                ) : (
+                  <>
+                    <Upload size={16} className="mr-2" />
+                    Upload Sekarang
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
           </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsModalOpen(false);
-                resetForm();
-              }}
-            >
-              Batal
-            </Button>
-            <Button onClick={handleUploadPortfolio} disabled={isUploading} className="bg-primary hover:bg-primary/90">
-              {isUploading ? (
-                <>
-                  <Loader2 size={16} className="mr-2 animate-spin" />
-                  Mengupload...
-                </>
-              ) : (
-                <>
-                  <Upload size={16} className="mr-2" />
-                  Upload Sekarang
-                </>
-              )}
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -901,25 +1032,31 @@ export default function PortofolioPage() {
           </DialogHeader>
           <div className="space-y-4">
             {selectedDetailItem && (
-              <div className="overflow-hidden rounded-xl border border-gray-100 bg-gray-50">
+              <div className="overflow-hidden rounded-xl border border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800">
                 <PortfolioFilePreview url={selectedDetailItem.image_url} title={selectedDetailItem.title} />
               </div>
             )}
             <div>
-              <p className="text-sm font-semibold text-gray-700">Deskripsi</p>
-              <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-gray-600">
+              <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Deskripsi</p>
+              <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-600 dark:text-slate-300">
                 {selectedDetailItem?.description || "Tanpa deskripsi"}
               </p>
             </div>
             <a
-              href={selectedDetailItem?.image_url}
+              href={selectedDetailItem ? getPortfolioPrimaryUrl(selectedDetailItem) : "#"}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90"
             >
               <ExternalLink size={14} className="mr-2" />
-              Buka File
+              {selectedDetailItem && isHtmlPortfolioFile(selectedDetailItem.image_url) && selectedDetailItem.public_slug ? "Buka Link Publik" : "Buka File"}
             </a>
+            {selectedDetailItem && isHtmlPortfolioFile(selectedDetailItem.image_url) && selectedDetailItem.public_slug ? (
+              <Button type="button" variant="outline" onClick={() => void handleCopyPublicLink(selectedDetailItem)}>
+                <Copy size={14} className="mr-2" />
+                Copy Link
+              </Button>
+            ) : null}
             {selectedDetailItem && (
               <Button
                 type="button"

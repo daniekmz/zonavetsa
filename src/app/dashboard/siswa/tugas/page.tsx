@@ -169,25 +169,25 @@ export default function SiswaTugasPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-primary">Tugas Saya</h2>
-        <p className="text-gray-500">Kumpulkan tugas Anda tepat waktu</p>
+        <p className="text-slate-500 dark:text-slate-400">Kumpulkan tugas Anda tepat waktu</p>
       </div>
 
       {isLoading ? (
         <div className="grid gap-4">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="bg-white rounded-xl p-6 animate-pulse">
-              <div className="h-6 bg-gray-200 rounded w-1/2 mb-3" />
-              <div className="h-4 bg-gray-200 rounded w-3/4" />
+            <div key={i} className="bg-white dark:bg-slate-900 rounded-xl p-6 animate-pulse">
+              <div className="h-6 bg-gray-200 dark:bg-slate-700 rounded w-1/2 mb-3" />
+              <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-3/4" />
             </div>
           ))}
         </div>
       ) : assignments.length === 0 ? (
-        <div className="bg-white rounded-xl p-12 text-center shadow-sm">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-12 text-center shadow-sm">
           <FileText size={64} className="mx-auto text-gray-300 mb-4" />
-          <h3 className="text-lg font-semibold text-gray-700 mb-2">
+          <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-2">
             Tidak Ada Tugas Aktif
           </h3>
-          <p className="text-gray-500">
+          <p className="text-slate-500 dark:text-slate-400">
             Tugas yang di-assign ke kelas Anda akan muncul di sini
           </p>
         </div>
@@ -200,14 +200,14 @@ export default function SiswaTugasPage() {
             return (
               <div
                 key={assignment.id}
-                className={`bg-white rounded-xl p-6 shadow-sm ${
+                className={`bg-white dark:bg-slate-900 rounded-xl p-6 shadow-sm ${
                   submission ? "border-l-4 border-green-500" : ""
                 }`}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-bold text-lg text-gray-800">
+                      <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">
                         {assignment.title}
                       </h3>
                       {submission ? (
@@ -224,11 +224,11 @@ export default function SiswaTugasPage() {
                     </div>
                     
                     {assignment.description && (
-                      <p className="text-gray-600 mb-3">{assignment.description}</p>
+                      <p className="text-slate-600 dark:text-slate-300 mb-3">{assignment.description}</p>
                     )}
 
                     {assignment.due_date && (
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                         <Clock size={14} />
                         Batas: {formatDate(assignment.due_date)}
                       </div>

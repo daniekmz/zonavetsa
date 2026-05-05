@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
@@ -65,6 +65,18 @@ export default function ExamTakingPage({ params }: { params: { examId: string } 
   const [showStartConfirm, setShowStartConfirm] = useState(false);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
 
+  const answersRef = useRef(answers);
+  const timeRemainingRef = useRef(timeRemaining);
+  const isFinalizingRef = useRef(false);
+
+  useEffect(() => {
+    answersRef.current = answers;
+  }, [answers]);
+
+  useEffect(() => {
+    timeRemainingRef.current = timeRemaining;
+  }, [timeRemaining]);
+
   const answersBackupKey = `${ANSWER_BACKUP_KEY}_${params.examId}`;
   const metaKey = `${META_KEY}_${params.examId}`;
 
@@ -89,12 +101,9 @@ export default function ExamTakingPage({ params }: { params: { examId: string } 
       }
 
       let nextQuestions = [...sourceQuestions];
-      if (currentExam.shuffle_questions) {
-        nextQuestions = shuffleArray(nextQuestions);
-      }
 
       nextQuestions = nextQuestions.map((question) => {
-        if (question.is_essay || !currentExam.shuffle_options) {
+        if (question.is_essay) {
           return question;
         }
 
@@ -103,20 +112,28 @@ export default function ExamTakingPage({ params }: { params: { examId: string } 
             letter,
             text: question[`option_${letter.toLowerCase()}` as keyof ExamQuestion] as string | undefined,
           }))
-          .filter((item) => item.text);
+          .filter((item) => item.text && item.text.trim() !== "");
 
-        const shuffledOptions = shuffleArray(optionEntries);
+        let processedOptions = [...optionEntries];
+        if (currentExam.shuffle_options) {
+          processedOptions = seededShuffleArray(processedOptions, `${sessionId}_options_${question.id}`);
+        }
+
         const optionLetters = ["A", "B", "C", "D", "E"];
-        const correctIndex = shuffledOptions.findIndex((item) => item.letter === question.correct_answer);
+        const correctIndex = processedOptions.findIndex((item) => item.letter === question.correct_answer);
 
         const nextQuestion: ExamQuestion = { ...question };
         optionLetters.forEach((letter, index) => {
           const optionKey = `option_${letter.toLowerCase()}` as keyof ExamQuestion;
-          (nextQuestion as any)[optionKey] = shuffledOptions[index]?.text || undefined;
+          (nextQuestion as any)[optionKey] = processedOptions[index]?.text || undefined;
         });
         nextQuestion.correct_answer = correctIndex >= 0 ? optionLetters[correctIndex] : question.correct_answer;
         return nextQuestion;
       });
+
+      if (currentExam.shuffle_questions) {
+        nextQuestions = seededShuffleArray(nextQuestions, `${sessionId}_questions`);
+      }
 
       localStorage.setItem(viewKey, JSON.stringify(nextQuestions));
       return nextQuestions;
@@ -138,9 +155,10 @@ export default function ExamTakingPage({ params }: { params: { examId: string } 
   const saveAnswers = useCallback(async () => {
     if (examStatus.status !== "in_progress" || !examStatus.currentSession?.id) return;
 
-    localStorage.setItem(answersBackupKey, JSON.stringify(answers));
+    const currentAnswers = answersRef.current;
+    localStorage.setItem(answersBackupKey, JSON.stringify(currentAnswers));
 
-    const entries = Object.entries(answers).filter(([, value]) => value.trim() !== "");
+    const entries = Object.entries(currentAnswers).filter(([, value]: [string, any]) => typeof value === "string" && value.trim() !== "");
     if (entries.length === 0) return;
 
     setIsSaving(true);
@@ -161,16 +179,18 @@ export default function ExamTakingPage({ params }: { params: { examId: string } 
 
     await supabase
       .from("exam_sessions")
-      .update({ time_remaining: timeRemaining ?? null })
+      .update({ time_remaining: timeRemainingRef.current ?? null })
       .eq("id", examStatus.currentSession.id);
 
     setLastSavedAt(new Date().toISOString());
     setIsSaving(false);
-  }, [answers, answersBackupKey, examStatus, timeRemaining]);
+  }, [answersBackupKey, examStatus.status, examStatus.currentSession?.id]);
 
   const finalizeExam = useCallback(
     async (reason: "submitted" | "expired") => {
       if (!exam || !examStatus.currentSession?.id) return;
+      if (isFinalizingRef.current) return;
+      isFinalizingRef.current = true;
 
       await saveAnswers();
 
@@ -179,7 +199,7 @@ export default function ExamTakingPage({ params }: { params: { examId: string } 
 
       const { student } = JSON.parse(sessionData);
       const supabase = createClient();
-      const summary = calculateExamSubmission(questions, answers);
+      const summary = calculateExamSubmission(questions, answersRef.current);
       const submittedAt = new Date().toISOString();
 
       await supabase
@@ -284,7 +304,7 @@ export default function ExamTakingPage({ params }: { params: { examId: string } 
         },
       });
     },
-    [answers, clearLocalExamState, exam, examStatus.currentSession, isStandaloneExamRoute, params.examId, questions, saveAnswers]
+    [clearLocalExamState, exam, examStatus.currentSession, isStandaloneExamRoute, params.examId, questions, saveAnswers]
   );
 
   const loadExamData = useCallback(async () => {
@@ -395,10 +415,10 @@ export default function ExamTakingPage({ params }: { params: { examId: string } 
         const startedAt = new Date(session.started_at).getTime();
         const durationMs = (currentExam.duration_minutes || 90) * 60 * 1000;
         const endTime = startedAt + durationMs;
-        const persistedRemaining = session.time_remaining ?? Math.floor((endTime - now) / 1000);
+        const calculatedRemaining = Math.max(0, Math.floor((endTime - now) / 1000));
 
         setExamStatus({ status: "in_progress", currentSession: session });
-        setTimeRemaining(Math.max(0, persistedRemaining));
+        setTimeRemaining(calculatedRemaining);
       }
     } else {
       setQuestions(sourceQuestions);
@@ -415,21 +435,29 @@ export default function ExamTakingPage({ params }: { params: { examId: string } 
   }, [loadExamData]);
 
   useEffect(() => {
-    if (!exam || examStatus.status !== "in_progress" || timeRemaining === null) return;
+    if (!exam || examStatus.status !== "in_progress" || !examStatus.currentSession?.started_at) return;
 
-    if (timeRemaining <= 0) {
-      finalizeExam("expired");
-      return;
-    }
+    const checkTime = () => {
+      const now = Date.now();
+      const startedAt = new Date(examStatus.currentSession!.started_at).getTime();
+      const durationMs = (exam.duration_minutes || 90) * 60 * 1000;
+      const endTime = startedAt + durationMs;
+      const remaining = Math.max(0, Math.floor((endTime - now) / 1000));
 
-    const timer = window.setInterval(() => {
-      setTimeRemaining((prev) => (prev !== null ? Math.max(0, prev - 1) : prev));
-    }, 1000);
+      setTimeRemaining(remaining);
+
+      if (remaining <= 0) {
+        finalizeExam("expired");
+      }
+    };
+
+    const timer = window.setInterval(checkTime, 1000);
+    checkTime();
 
     return () => {
       window.clearInterval(timer);
     };
-  }, [exam, examStatus.status, finalizeExam, timeRemaining]);
+  }, [exam, examStatus.status, examStatus.currentSession?.started_at, finalizeExam]);
 
   useEffect(() => {
     if (examStatus.status !== "in_progress") return;
@@ -597,6 +625,7 @@ export default function ExamTakingPage({ params }: { params: { examId: string } 
     setAnswers({});
     setCurrentQuestionIndex(0);
     persistMeta(0);
+    isFinalizingRef.current = false;
 
     if (!isStandaloneExamRoute) {
       router.replace(`/exam/siswa/${params.examId}`);
@@ -612,6 +641,16 @@ export default function ExamTakingPage({ params }: { params: { examId: string } 
   };
 
   const requestSubmitExam = () => {
+    const firstUnansweredIndex = questions.findIndex((question) => !(answers[question.id] || "").trim());
+    if (firstUnansweredIndex >= 0) {
+      goToQuestion(firstUnansweredIndex);
+      toast(
+        `Masih ada ${progress.unansweredCount} soal yang belum dijawab. Anda diarahkan ke soal berikutnya yang kosong.`,
+        "info"
+      );
+      return;
+    }
+
     setShowSubmitConfirm(true);
   };
 
@@ -636,13 +675,17 @@ export default function ExamTakingPage({ params }: { params: { examId: string } 
   const currentQuestion = questions[currentQuestionIndex];
   const progress = useMemo(() => calculateExamSubmission(questions, answers), [answers, questions]);
   const answeredRatio = questions.length > 0 ? Math.round((progress.answeredCount / questions.length) * 100) : 0;
+  const firstUnansweredIndex = useMemo(
+    () => questions.findIndex((question) => !(answers[question.id] || "").trim()),
+    [answers, questions]
+  );
 
   if (isLoading) {
     return (
       <div className="flex min-h-[70vh] items-center justify-center">
         <div className="text-center">
           <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="mt-4 text-sm text-slate-500">Menyiapkan ruang ujian...</p>
+          <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">Menyiapkan ruang ujian...</p>
         </div>
       </div>
     );
@@ -660,22 +703,22 @@ export default function ExamTakingPage({ params }: { params: { examId: string } 
           Kembali ke daftar ujian
         </Button>
 
-        <section className="rounded-3xl bg-[radial-gradient(circle_at_top_left,_rgba(0,43,91,0.12),_transparent_42%),linear-gradient(135deg,_#ffffff,_#edf4ff)] p-8 shadow-sm">
+        <section className="rounded-3xl bg-[radial-gradient(circle_at_top_left,_rgba(0,43,91,0.12),_transparent_42%),linear-gradient(135deg,_#ffffff,_#edf4ff)] dark:bg-none dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 shadow-sm">
           <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white dark:bg-slate-900 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-primary">
               <Sparkles size={14} />
               Briefing Ujian
             </div>
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="max-w-2xl">
                 <h1 className="text-3xl font-bold text-primary">{exam.title}</h1>
-                <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
                   {exam.description || "Baca instruksi dengan teliti sebelum mulai mengerjakan."}
                 </p>
               </div>
-              <div className="rounded-2xl bg-white px-5 py-4 text-center shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Durasi</p>
-                <p className="mt-2 text-2xl font-bold text-slate-900">
+              <div className="rounded-2xl bg-white dark:bg-slate-900 px-5 py-4 text-center shadow-sm">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Durasi</p>
+                <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">
                   {formatDurationLabel(exam.duration_minutes || 90)}
                 </p>
               </div>
@@ -695,22 +738,22 @@ export default function ExamTakingPage({ params }: { params: { examId: string } 
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-          <section className="rounded-2xl bg-white p-6 shadow-sm">
-            <h2 className="flex items-center gap-2 text-lg font-bold text-slate-800">
+          <section className="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm">
+            <h2 className="flex items-center gap-2 text-lg font-bold text-slate-800 dark:text-slate-100">
               <BookOpen size={18} className="text-primary" />
               Instruksi dari guru
             </h2>
-            <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm leading-relaxed text-slate-600">
+            <div className="mt-4 rounded-2xl bg-slate-50 dark:bg-slate-800 p-4 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
               {exam.instructions || "Kerjakan semua soal dengan jujur. Simpan jawaban secara berkala bila diperlukan."}
             </div>
           </section>
 
-          <section className="rounded-2xl bg-white p-6 shadow-sm">
-            <h2 className="flex items-center gap-2 text-lg font-bold text-slate-800">
+          <section className="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm">
+            <h2 className="flex items-center gap-2 text-lg font-bold text-slate-800 dark:text-slate-100">
               <AlertTriangle size={18} className="text-warning" />
               Aturan pengerjaan
             </h2>
-            <ul className="mt-4 space-y-3 text-sm text-slate-600">
+            <ul className="mt-4 space-y-3 text-sm text-slate-600 dark:text-slate-300">
               <li>Waktu mulai dihitung saat tombol `Mulai Ujian` ditekan.</li>
               <li>Jawaban disimpan otomatis secara berkala selama ujian berjalan.</li>
               <li>Klik kanan dan copy-paste dibatasi selama mode ujian aktif.</li>
@@ -764,15 +807,15 @@ export default function ExamTakingPage({ params }: { params: { examId: string } 
           Kembali ke daftar ujian
         </Button>
 
-        <section className="rounded-3xl bg-white p-8 shadow-sm">
+        <section className="rounded-3xl bg-white dark:bg-slate-900 p-8 shadow-sm">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-slate-900">{exam.title}</h1>
-              <p className="mt-2 text-sm text-slate-500">{exam.description || "Ujian telah selesai diproses."}</p>
+              <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{exam.title}</h1>
+              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{exam.description || "Ujian telah selesai diproses."}</p>
             </div>
             <div className={`rounded-2xl px-5 py-4 text-center ${isPassed ? "bg-success/10" : "bg-danger/10"}`}>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Status Hasil</p>
-              <p className="mt-2 text-2xl font-bold text-slate-900">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Status Hasil</p>
+              <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">
                 {score?.score ?? 0}/100
               </p>
               <p className={`mt-1 text-sm font-semibold ${isPassed ? "text-success" : "text-danger"}`}>
@@ -782,7 +825,7 @@ export default function ExamTakingPage({ params }: { params: { examId: string } 
           </div>
 
           {examStatus.status === "expired" && (
-            <div className="mt-6 rounded-2xl border border-warning/30 bg-warning/10 p-4 text-sm text-slate-700">
+            <div className="mt-6 rounded-2xl border border-warning/30 bg-warning/10 p-4 text-sm text-slate-700 dark:text-slate-200">
               Waktu pengerjaan habis sehingga jawaban dikirim otomatis oleh sistem.
             </div>
           )}
@@ -799,10 +842,10 @@ export default function ExamTakingPage({ params }: { params: { examId: string } 
           </div>
         </section>
 
-        <section className="rounded-2xl bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-bold text-slate-800">Ringkasan pengerjaan</h2>
+        <section className="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">Ringkasan pengerjaan</h2>
           {!exam.show_results ? (
-            <p className="mt-3 text-sm text-slate-500">
+            <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
               Guru menyembunyikan detail hasil. Status pengiriman Anda sudah tercatat dengan aman.
             </p>
           ) : (
@@ -812,19 +855,19 @@ export default function ExamTakingPage({ params }: { params: { examId: string } 
                 const isCorrect = !question.is_essay && userAnswer === (question.correct_answer || "");
 
                 return (
-                  <div key={question.id} className="rounded-2xl border border-slate-200 p-4">
+                  <div key={question.id} className="rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <p className="text-sm font-semibold text-slate-800">
+                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
                           {index + 1}. {question.question_text}
                         </p>
-                        <p className="mt-2 text-sm text-slate-500">
+                        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
                           Jawaban Anda: {userAnswer || "Belum diisi"}
                         </p>
                         {question.is_essay ? (
                           <p className="mt-1 text-xs text-warning">Soal essay menunggu koreksi guru.</p>
                         ) : (
-                          <p className="mt-1 text-xs text-slate-500">
+                          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                             Kunci jawaban: {question.correct_answer || "-"}
                           </p>
                         )}
@@ -847,7 +890,7 @@ export default function ExamTakingPage({ params }: { params: { examId: string } 
 
   return (
     <div className="space-y-6">
-      <header className="sticky top-4 z-30 rounded-3xl bg-white/90 p-4 shadow-sm backdrop-blur">
+      <header className="sticky top-4 z-30 rounded-3xl bg-white/90 dark:bg-slate-900/90 p-4 shadow-sm backdrop-blur">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-2">
             <div className="flex items-center gap-3">
@@ -865,8 +908,8 @@ export default function ExamTakingPage({ params }: { params: { examId: string } 
               </span>
             </div>
             <div>
-              <h1 className="text-xl font-bold text-slate-900">{exam.title}</h1>
-              <p className="text-sm text-slate-500">
+              <h1 className="text-xl font-bold text-slate-900 dark:text-white">{exam.title}</h1>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 Soal {currentQuestionIndex + 1} dari {questions.length} • {progress.answeredCount} sudah dijawab
               </p>
             </div>
@@ -874,12 +917,12 @@ export default function ExamTakingPage({ params }: { params: { examId: string } 
 
           <div className="flex flex-wrap items-center gap-3">
             {lastSavedAt && (
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-slate-500 dark:text-slate-400">
                 Tersimpan {new Date(lastSavedAt).toLocaleTimeString("id-ID")}
               </span>
             )}
             {isSaving && (
-              <span className="flex items-center gap-1 text-xs text-slate-500">
+              <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
                 <Save size={12} className="animate-pulse" />
                 Menyimpan...
               </span>
@@ -902,11 +945,11 @@ export default function ExamTakingPage({ params }: { params: { examId: string } 
         </div>
 
         <div className="mt-4">
-          <div className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+          <div className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
             <span>Progress</span>
             <span>{answeredRatio}%</span>
           </div>
-          <div className="h-2 rounded-full bg-slate-200">
+          <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-700">
             <div
               className="h-full rounded-full bg-primary transition-all"
               style={{ width: `${answeredRatio}%` }}
@@ -917,8 +960,8 @@ export default function ExamTakingPage({ params }: { params: { examId: string } 
 
       <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
         <aside className="space-y-4">
-          <section className="rounded-2xl bg-white p-4 shadow-sm">
-            <h2 className="text-sm font-bold uppercase tracking-[0.16em] text-slate-500">Navigasi Soal</h2>
+          <section className="rounded-2xl bg-white dark:bg-slate-900 p-4 shadow-sm">
+            <h2 className="text-sm font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Navigasi Soal</h2>
             <div className="mt-4 grid grid-cols-5 gap-2">
               {questions.map((question, index) => {
                 const isCurrent = index === currentQuestionIndex;
@@ -933,7 +976,7 @@ export default function ExamTakingPage({ params }: { params: { examId: string } 
                         ? "bg-primary text-white"
                         : hasAnswer
                         ? "bg-success/10 text-success"
-                        : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                        : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-700"
                     }`}
                   >
                     {index + 1}
@@ -943,62 +986,73 @@ export default function ExamTakingPage({ params }: { params: { examId: string } 
             </div>
           </section>
 
-          <section className="rounded-2xl bg-white p-4 shadow-sm">
-            <h2 className="text-sm font-bold uppercase tracking-[0.16em] text-slate-500">Ringkasan</h2>
-            <div className="mt-4 space-y-3 text-sm text-slate-600">
+          <section className="rounded-2xl bg-white dark:bg-slate-900 p-4 shadow-sm">
+            <h2 className="text-sm font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Ringkasan</h2>
+            <div className="mt-4 space-y-3 text-sm text-slate-600 dark:text-slate-300">
               <div className="flex items-center justify-between">
                 <span>Sudah dijawab</span>
-                <span className="font-semibold text-slate-900">{progress.answeredCount}</span>
+                <span className="font-semibold text-slate-900 dark:text-white">{progress.answeredCount}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span>Belum dijawab</span>
-                <span className="font-semibold text-slate-900">{progress.unansweredCount}</span>
+                <span className="font-semibold text-slate-900 dark:text-white">{progress.unansweredCount}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span>Essay</span>
-                <span className="font-semibold text-slate-900">
+                <span className="font-semibold text-slate-900 dark:text-white">
                   {progress.answeredEssayCount}
                 </span>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2 w-full"
+                disabled={firstUnansweredIndex < 0}
+                onClick={() => firstUnansweredIndex >= 0 && goToQuestion(firstUnansweredIndex)}
+              >
+                {firstUnansweredIndex >= 0
+                  ? `Ke Soal Belum Dijawab #${firstUnansweredIndex + 1}`
+                  : "Semua Soal Sudah Terjawab"}
+              </Button>
             </div>
           </section>
         </aside>
 
-        <section className="rounded-3xl bg-white p-6 shadow-sm md:p-8">
+        <section className="rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-sm md:p-8">
           {currentQuestion ? (
             <>
-              <div className="flex flex-col gap-3 border-b border-slate-100 pb-6 md:flex-row md:items-start md:justify-between">
+              <div className="flex flex-col gap-3 border-b border-slate-100 dark:border-slate-800 pb-6 md:flex-row md:items-start md:justify-between">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                     {currentQuestion.is_essay ? "Soal Essay" : "Pilihan Ganda"}
                   </p>
-                  <h2 className="mt-2 text-2xl font-bold text-slate-900">
+                  <h2 className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">
                     Pertanyaan {currentQuestionIndex + 1}
                   </h2>
                 </div>
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-600 dark:text-slate-300">
                   {currentQuestion.points || 1} poin
                 </span>
               </div>
 
               <div className="py-8">
-                <p className="text-lg leading-relaxed text-slate-800">{currentQuestion.question_text}</p>
+                <p className="text-lg leading-relaxed text-slate-800 dark:text-slate-100">{currentQuestion.question_text}</p>
 
                 {currentQuestion.is_essay ? (
                   <div className="mt-6 space-y-3">
                     <textarea
                       value={answers[currentQuestion.id] || ""}
                       onChange={(event) => handleAnswerSelect(currentQuestion.id, event.target.value)}
-                      className="min-h-[220px] w-full rounded-2xl border border-slate-200 p-4 text-sm text-slate-700 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                      className="min-h-[220px] w-full rounded-2xl border border-slate-200 dark:border-slate-800 p-4 text-sm text-slate-700 dark:text-slate-200 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                       placeholder="Tulis jawaban essay Anda di sini..."
                     />
-                    <p className="text-xs text-slate-500">Jawaban essay akan diperiksa langsung oleh guru.</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Jawaban essay akan diperiksa langsung oleh guru.</p>
                   </div>
                 ) : (
                   <div className="mt-6 space-y-4">
                     {(["A", "B", "C", "D", "E"] as const).map((letter) => {
                       const option = currentQuestion[`option_${letter.toLowerCase()}` as keyof ExamQuestion] as string | undefined;
-                      if (!option) return null;
+                      if (!option || option.trim() === "") return null;
 
                       const selected = answers[currentQuestion.id] === letter;
 
@@ -1009,13 +1063,13 @@ export default function ExamTakingPage({ params }: { params: { examId: string } 
                           className={`flex w-full items-start gap-4 rounded-2xl border p-4 text-left transition-all ${
                             selected
                               ? "border-primary bg-primary/5 shadow-sm"
-                              : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                              : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-800"
                           }`}
                         >
-                          <span className={`flex h-9 w-9 items-center justify-center rounded-full font-semibold ${selected ? "bg-primary text-white" : "bg-slate-100 text-slate-600"}`}>
+                          <span className={`flex h-9 w-9 items-center justify-center rounded-full font-semibold ${selected ? "bg-primary text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"}`}>
                             {letter}
                           </span>
-                          <span className="flex-1 text-sm leading-relaxed text-slate-700">{option}</span>
+                          <span className="flex-1 text-sm leading-relaxed text-slate-700 dark:text-slate-200">{option}</span>
                         </button>
                       );
                     })}
@@ -1023,7 +1077,7 @@ export default function ExamTakingPage({ params }: { params: { examId: string } 
                 )}
               </div>
 
-              <div className="flex flex-col gap-3 border-t border-slate-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-3 border-t border-slate-100 dark:border-slate-800 pt-6 sm:flex-row sm:items-center sm:justify-between">
                 <Button
                   variant="outline"
                   disabled={currentQuestionIndex === 0}
@@ -1034,6 +1088,14 @@ export default function ExamTakingPage({ params }: { params: { examId: string } 
                 </Button>
 
                 <div className="flex flex-col gap-3 sm:flex-row">
+                  {firstUnansweredIndex >= 0 && currentQuestionIndex === questions.length - 1 && (
+                    <Button
+                      variant="outline"
+                      onClick={() => goToQuestion(firstUnansweredIndex)}
+                    >
+                      Cek Soal Kosong
+                    </Button>
+                  )}
                   {currentQuestionIndex < questions.length - 1 ? (
                     <Button onClick={() => goToQuestion(currentQuestionIndex + 1)} className="bg-primary hover:bg-primary-light">
                       Selanjutnya
@@ -1049,7 +1111,7 @@ export default function ExamTakingPage({ params }: { params: { examId: string } 
               </div>
             </>
           ) : (
-            <div className="text-center text-slate-500">Soal belum tersedia untuk ujian ini.</div>
+            <div className="text-center text-slate-500 dark:text-slate-400">Soal belum tersedia untuk ujian ini.</div>
           )}
         </section>
       </div>
@@ -1059,9 +1121,7 @@ export default function ExamTakingPage({ params }: { params: { examId: string } 
           <DialogHeader>
             <DialogTitle>Selesaikan Ujian?</DialogTitle>
             <DialogDescription>
-              {progress.unansweredCount > 0
-                ? `Masih ada ${progress.unansweredCount} soal yang belum dijawab. Jika Anda memilih Ya, jawaban saat ini akan langsung dikirim.`
-                : "Jika Anda memilih Ya, jawaban akan langsung dikirim dan ujian tidak bisa dilanjutkan lagi."}
+              Semua soal sudah terisi. Jika Anda memilih Ya, jawaban akan langsung dikirim dan ujian tidak bisa dilanjutkan lagi.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -1088,14 +1148,52 @@ function PrepCard({
   value: string;
 }) {
   return (
-    <div className="rounded-2xl bg-white p-4 shadow-sm">
+    <div className="rounded-2xl bg-white dark:bg-slate-900 p-4 shadow-sm">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</span>
+        <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{label}</span>
         <Icon size={16} className="text-primary" />
       </div>
-      <p className="mt-3 text-lg font-bold text-slate-900">{value}</p>
+      <p className="mt-3 text-lg font-bold text-slate-900 dark:text-white">{value}</p>
     </div>
   );
+}
+
+function xmur3(str: string) {
+  let h = 1779033703 ^ str.length;
+  for(let i = 0; i < str.length; i++) {
+    h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+    h = (h << 13) | (h >>> 19);
+  }
+  return function() {
+    h = Math.imul(h ^ (h >>> 16), 2246822507);
+    h = Math.imul(h ^ (h >>> 13), 3266489909);
+    return (h ^= h >>> 16) >>> 0;
+  }
+}
+
+function sfc32(a: number, b: number, c: number, d: number) {
+  return function() {
+    a >>>= 0; b >>>= 0; c >>>= 0; d >>>= 0; 
+    let t = (a + b) | 0;
+    a = b ^ (b >>> 9);
+    b = (c + (c << 3)) | 0;
+    c = (c << 21) | (c >>> 11);
+    d = (d + 1) | 0;
+    t = (t + d) | 0;
+    c = (c + t) | 0;
+    return (t >>> 0) / 4294967296;
+  }
+}
+
+function seededShuffleArray<T>(items: T[], seed: string) {
+  const seedFunc = xmur3(seed);
+  const rand = sfc32(seedFunc(), seedFunc(), seedFunc(), seedFunc());
+  const next = [...items];
+  for (let index = next.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(rand() * (index + 1));
+    [next[index], next[randomIndex]] = [next[randomIndex], next[index]];
+  }
+  return next;
 }
 
 function shuffleArray<T>(items: T[]) {

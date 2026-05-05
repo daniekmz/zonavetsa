@@ -37,6 +37,58 @@ interface ChangelogItem {
 
 const WEB_CHANGELOG: ChangelogItem[] = [
   {
+    version: "v3.4.0",
+    date: "21 April 2026",
+    category: "Fitur Baru",
+    title: "Sistem Pengumuman Siswa dari Guru dan Admin",
+    details: [
+      "Menu Pengumuman siswa sekarang membaca data database dan menampilkan pengumuman aktif dari guru maupun admin.",
+      "Guru mendapat halaman input pengumuman untuk siswa dengan target semua kelas atau kelas tertentu, termasuk pin, status aktif, dan masa berlaku.",
+      "Admin mendapat halaman pengumuman resmi sekolah dengan kontrol target kelas yang sama seperti guru.",
+      "Setiap pengumuman baru dari guru atau admin sekarang otomatis mengirim notifikasi ke siswa target dan mengarah ke menu Pengumuman.",
+      "Sidebar guru dan admin diperbarui agar menu pengumuman bisa diakses langsung dari dashboard.",
+      "Skema database ditambah tabel announcements beserta trigger updated_at, dukungan realtime, dan tipe notifikasi announcement.",
+    ],
+  },
+  {
+    version: "v3.3.0",
+    date: "21 April 2026",
+    category: "Fitur Baru",
+    title: "Link Publik HTML + Preview Web Responsif",
+    details: [
+      "Upload file index.html pada Galeri Karya siswa sekarang otomatis membuat public_slug unik sehingga karya bisa diakses langsung lewat route seperti /nama_siswa.",
+      "Jika satu siswa mengupload banyak file HTML, sistem membuat slug berurutan agar semua karya tetap punya link publik masing-masing tanpa bentrok.",
+      "Tombol Buka Link dan Copy Link ditambahkan pada galeri siswa, guru, dan admin untuk karya HTML.",
+      "Halaman route publik kini merender HTML, CSS, dan JavaScript inline sebagai preview web, bukan lagi menampilkan kode mentahan.",
+      "Tampilan preview publik dioptimalkan untuk handphone, tablet, dan desktop dengan area baca yang lebih responsif.",
+      "Dokumen changelog proyek dan modal changelog web ikut diperbarui agar riwayat rilis tetap sinkron.",
+    ],
+  },
+  {
+    version: "v3.1.0",
+    date: "21 April 2026",
+    category: "Perbaikan",
+    title: "Sapu Bersih Dark Mode & Komponen Form",
+    details: [
+      "Penghapusan radial gradient silo putih pada background modul Ujian Guru & Siswa.",
+      "Perbaikan massal lebih dari 80 komponen yang menggunakan warna bg-slate-100 dan bg-gray-100 pada hover/animate pulse agar meredup di mode malam.",
+      "Standarisasi input <textarea> native agar patuh pada aturan border dan warna teks Dark Mode.",
+    ],
+  },
+  {
+    version: "v3.0.0",
+    date: "21 April 2026",
+    category: "Peningkatan",
+    title: "Redesign Minimalis, Navigasi Tab Bawah, & Fokus File Manager",
+    details: [
+      "Modernisasi tema Tailwind v3 menggunakan palet Navy/Teal/Amber dan font Inter yang bersih.",
+      "Menu sidebar dilengkapi efek garis aktif teal dan layout responsif Hamburger yang fleksibel.",
+      "Penerapan navigasi pintar Bottom Tab Bar khusus untuk akses guru & siswa di versi handphone.",
+      "File Manager Siswa direstorasi menjadi navigasi sentral tanpa halangan widget dashboard perantara.",
+      "Sistem Dark Mode dirombak total dan dijamin 100% konsisten pada setiap teks, input hover, maupun background.",
+    ],
+  },
+  {
     version: "v2.6.0",
     date: "20 April 2026",
     category: "Peningkatan",
@@ -457,7 +509,7 @@ export default function AdminSettingsPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-primary">Pengaturan</h2>
-        <p className="text-gray-500">Kelola data sekolah</p>
+        <p className="text-slate-500 dark:text-slate-400">Kelola data sekolah</p>
       </div>
 
       {/* Tabs */}
@@ -469,7 +521,7 @@ export default function AdminSettingsPage() {
             className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
               activeTab === tab.id
                 ? "bg-primary text-white"
-                : "text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800"
+                : "text-slate-600 dark:text-slate-300 hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-gray-800"
             }`}
           >
             <tab.icon size={16} />
@@ -480,7 +532,7 @@ export default function AdminSettingsPage() {
 
       {/* Content */}
       {isLoading ? (
-        <div className="text-center py-12 text-gray-500">Memuat...</div>
+        <div className="text-center py-12 text-slate-500 dark:text-slate-400">Memuat...</div>
       ) : (
         <>
           {/* SCHOOL TAB */}
@@ -533,7 +585,7 @@ export default function AdminSettingsPage() {
               {majors.length === 0 ? (
                 <div className="bg-white dark:bg-slate-800 rounded-xl p-12 text-center shadow-sm">
                   <GraduationCap size={48} className="mx-auto text-gray-300 mb-4" />
-                  <p className="text-gray-500">Belum ada jurusan</p>
+                  <p className="text-slate-500 dark:text-slate-400">Belum ada jurusan</p>
                 </div>
               ) : (
                 <div className="grid md:grid-cols-2 gap-4">
@@ -541,7 +593,7 @@ export default function AdminSettingsPage() {
                     <div key={major.id} className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm flex justify-between items-start">
                       <div>
                         <h4 className="font-bold text-lg">{major.name}</h4>
-                        <p className="text-sm text-gray-500">{major.description}</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">{major.description}</p>
                         {major.skills && major.skills.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-2">
                             {major.skills.map((skill, idx) => (
@@ -575,7 +627,7 @@ export default function AdminSettingsPage() {
                 <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700 rounded-lg">
                   <div>
                     <p className="font-medium">Jumlah Siswa</p>
-                    <p className="text-sm text-gray-500">Total siswa yang terdaftar</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Total siswa yang terdaftar</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" onClick={() => updateStat("students", getStatValue("students") - 10)}>-</Button>
@@ -587,7 +639,7 @@ export default function AdminSettingsPage() {
                 <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700 rounded-lg">
                   <div>
                     <p className="font-medium">Jumlah Guru</p>
-                    <p className="text-sm text-gray-500">Total guru yang terdaftar</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Total guru yang terdaftar</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" onClick={() => updateStat("guru", Math.max(0, getStatValue("guru") - 1))}>-</Button>
@@ -599,7 +651,7 @@ export default function AdminSettingsPage() {
                 <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700 rounded-lg">
                   <div>
                     <p className="font-medium">Jumlah Karyawan</p>
-                    <p className="text-sm text-gray-500">Total karyawan(non-guru)</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Total karyawan(non-guru)</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" onClick={() => updateStat("karyawan", Math.max(0, getStatValue("karyawan") - 1))}>-</Button>
@@ -611,7 +663,7 @@ export default function AdminSettingsPage() {
                 <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700 rounded-lg">
                   <div>
                     <p className="font-medium">Jumlah Jurusan</p>
-                    <p className="text-sm text-gray-500">Total jurusan yang aktif</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Total jurusan yang aktif</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" onClick={() => updateStat("jurusan", Math.max(0, getStatValue("jurusan") - 1))}>-</Button>
@@ -636,7 +688,7 @@ export default function AdminSettingsPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-lg">Ganti Password Admin</h3>
-                    <p className="text-sm text-gray-500">Perbarui kredensial login admin panel.</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Perbarui kredensial login admin panel.</p>
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -696,7 +748,7 @@ export default function AdminSettingsPage() {
                           <Sparkles size={12} />
                           {entry.version}
                         </span>
-                        <span className="text-xs text-gray-500">{entry.date}</span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">{entry.date}</span>
                       </div>
                       <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700 dark:bg-slate-700 dark:text-slate-200">
                         {entry.category}
@@ -730,7 +782,7 @@ export default function AdminSettingsPage() {
               {classes.length === 0 ? (
                 <div className="bg-white dark:bg-slate-800 rounded-xl p-12 text-center shadow-sm">
                   <BookOpen size={48} className="mx-auto text-gray-300 mb-4" />
-                  <p className="text-gray-500">Belum ada kelas</p>
+                  <p className="text-slate-500 dark:text-slate-400">Belum ada kelas</p>
                 </div>
               ) : (
                 <div className="grid md:grid-cols-3 gap-4">
@@ -738,7 +790,7 @@ export default function AdminSettingsPage() {
                     <div key={cls.id} className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm flex justify-between items-center">
                       <div>
                         <h4 className="font-bold">{cls.name}</h4>
-                        <p className="text-sm text-gray-500">Kelas</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Kelas</p>
                       </div>
                       <div className="flex gap-1">
                         <Button variant="ghost" size="sm" onClick={() => { setEditingItem(cls); setItemName(cls.name); setIsModalOpen(true); }}>

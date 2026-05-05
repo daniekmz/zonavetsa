@@ -125,7 +125,7 @@ export default function AdminKelasPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-primary">Data Kelas</h2>
-          <p className="text-gray-500">Kelola data kelas</p>
+          <p className="text-slate-500 dark:text-slate-400">Kelola data kelas</p>
         </div>
         <Button onClick={() => openModal()} className="bg-primary hover:bg-primary-light">
           <Plus size={18} />
@@ -134,7 +134,7 @@ export default function AdminKelasPage() {
       </div>
 
       {/* Search */}
-      <div className="bg-white rounded-xl p-4 shadow-sm">
+      <div className="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-sm">
         <div className="relative">
           <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <Input
@@ -151,14 +151,14 @@ export default function AdminKelasPage() {
         {isLoading ? (
           <div className="col-span-full text-center py-12">Memuat...</div>
         ) : filteredClasses.length === 0 ? (
-          <div className="col-span-full text-center py-12 text-gray-500">Tidak ada data kelas</div>
+          <div className="col-span-full text-center py-12 text-slate-500 dark:text-slate-400">Tidak ada data kelas</div>
         ) : (
           filteredClasses.map((cls) => {
             const walikelas = teachers.find((t) => t.kode_guru === cls.walikelas_kode);
             return (
               <div
                 key={cls.id}
-                className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-all"
+                className="bg-white dark:bg-slate-900 rounded-xl p-6 shadow-sm hover:shadow-md transition-all"
               >
                 <div className="flex items-start justify-between">
                   <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-3">
@@ -167,20 +167,20 @@ export default function AdminKelasPage() {
                   <div className="flex gap-1">
                     <button
                       onClick={() => openModal(cls)}
-                      className="p-2 hover:bg-gray-100 rounded-lg text-info"
+                      className="p-2 hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-slate-800 rounded-lg text-info"
                     >
                       <Edit2 size={16} />
                     </button>
                     <button
                       onClick={() => handleDelete(cls)}
-                      className="p-2 hover:bg-gray-100 rounded-lg text-danger"
+                      className="p-2 hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-slate-800 rounded-lg text-danger"
                     >
                       <Trash2 size={16} />
                     </button>
                   </div>
                 </div>
-                <h3 className="font-bold text-gray-800">{cls.name}</h3>
-                <p className="text-sm text-gray-500 mt-1">
+                <h3 className="font-bold text-slate-800 dark:text-slate-100">{cls.name}</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                   Walikelas: {walikelas?.name || "-"}
                 </p>
               </div>

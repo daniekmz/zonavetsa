@@ -378,6 +378,53 @@ export interface Database {
           user_agent?: string | null;
         };
       };
+      announcements: {
+        Row: {
+          id: string;
+          title: string;
+          content: string;
+          author_kode: string | null;
+          author_role: "admin" | "guru" | null;
+          author_name: string | null;
+          target_roles: string[] | null;
+          target_classes: string[] | null;
+          is_pinned: boolean | null;
+          is_active: boolean | null;
+          expires_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          content: string;
+          author_kode?: string | null;
+          author_role?: "admin" | "guru" | null;
+          author_name?: string | null;
+          target_roles?: string[] | null;
+          target_classes?: string[] | null;
+          is_pinned?: boolean | null;
+          is_active?: boolean | null;
+          expires_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          content?: string;
+          author_kode?: string | null;
+          author_role?: "admin" | "guru" | null;
+          author_name?: string | null;
+          target_roles?: string[] | null;
+          target_classes?: string[] | null;
+          is_pinned?: boolean | null;
+          is_active?: boolean | null;
+          expires_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
     Views: {};
     Functions: {};

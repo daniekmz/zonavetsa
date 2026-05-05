@@ -1,19 +1,29 @@
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Layout Dashboard Admin
+   Icon mapping baru: LayoutDashboard, Users, UserPlus, GraduationCap,
+   FolderOpen, Briefcase, PencilLine, BarChart2, ScrollText,
+   Settings, UsersRound
+   Menu baru: Manajemen User (UsersRound), Log Aktivitas (ScrollText)
+   Bottom tab: Overview, Siswa, Guru, Pengaturan
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 "use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  BarChart3,
+  BarChart2,
   Briefcase,
-  ClipboardList,
   FolderOpen,
   GraduationCap,
-  History,
   LayoutDashboard,
+  Megaphone,
+  PencilLine,
   RefreshCw,
+  ScrollText,
   Settings,
   UserPlus,
   Users,
+  UsersRound,
 } from "lucide-react";
 import type { Profile } from "@/types";
 import { logLogout } from "@/lib/activity-logger";
@@ -48,12 +58,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (isLoading || !admin) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="panel-surface p-8 text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-cyber text-white shadow-soft-signal">
-            <RefreshCw size={20} className="animate-spin" />
+      <div className="flex min-h-screen items-center justify-center bg-surface dark:bg-background">
+        <div className="rounded-3xl border bg-white dark:bg-slate-900 p-8 text-center shadow-panel dark:bg-card dark:border-slate-800">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-amber/10 text-amber dark:bg-amber/20">
+            <RefreshCw size={20} className="animate-spin" aria-hidden="true" />
           </div>
-          <p className="font-medium text-slate-600 dark:text-slate-300">Memuat panel administrator...</p>
+          <p className="font-semibold text-navy dark:text-white">Memuat panel administrator...</p>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Mohon tunggu sebentar</p>
         </div>
       </div>
     );
@@ -70,11 +81,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       userCode={admin.username}
       userRole="admin"
       avatarFallback={(admin.name || "A").charAt(0)}
-      statBadge="System Monitor"
+      statBadge="System Administrator"
       navSections={[
         {
           title: "Overview",
-          items: [{ href: "/dashboard/admin", label: "Overview", icon: LayoutDashboard }],
+          items: [
+            { href: "/dashboard/admin", label: "Overview & Statistik", icon: LayoutDashboard },
+          ],
         },
         {
           title: "Manajemen Pengguna",
@@ -82,6 +95,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             { href: "/dashboard/admin/guru", label: "Data Guru", icon: Users },
             { href: "/dashboard/admin/siswa", label: "Data Siswa", icon: UserPlus },
             { href: "/dashboard/admin/kelas", label: "Data Kelas", icon: GraduationCap },
+            /* ━━ Menu baru: Manajemen User ━━ */
+            { href: "/dashboard/admin/users", label: "Manajemen User", icon: UsersRound },
           ],
         },
         {
@@ -89,18 +104,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           items: [
             { href: "/dashboard/admin/files", label: "File Manager", icon: FolderOpen },
             { href: "/dashboard/admin/galeri", label: "Galeri Karya", icon: Briefcase },
-            { href: "/dashboard/admin/ujian", label: "Data Ujian", icon: ClipboardList },
-            { href: "/dashboard/admin/nilai", label: "Nilai Siswa", icon: BarChart3 },
+            { href: "/dashboard/admin/pengumuman", label: "Pengumuman", icon: Megaphone },
+            { href: "/dashboard/admin/ujian", label: "Data Ujian", icon: PencilLine },
+            { href: "/dashboard/admin/nilai", label: "Nilai Siswa", icon: BarChart2 },
           ],
         },
         {
           title: "Sistem",
           items: [
             { href: "/dashboard/admin/settings", label: "Pengaturan", icon: Settings },
+            /* ━━ Menu baru: Log Aktivitas (ScrollText ganti History) ━━ */
+            { href: "/dashboard/admin/logs", label: "Log Aktivitas", icon: ScrollText },
             { href: "/dashboard/admin/settings?tab=changelog", label: "Changelog Web", icon: RefreshCw },
-            { href: "/dashboard/admin/logs", label: "Activity Log", icon: History },
           ],
         },
+      ]}
+      /* ━━ Bottom Tab Bar mobile ━━ */
+      bottomTabs={[
+        { href: "/dashboard/admin", label: "Overview", icon: LayoutDashboard },
+        { href: "/dashboard/admin/siswa", label: "Siswa", icon: UserPlus },
+        { href: "/dashboard/admin/guru", label: "Guru", icon: Users },
+        { href: "/dashboard/admin/settings", label: "Pengaturan", icon: Settings },
       ]}
       headerTitle="Panel Administrator"
       headerSubtitle="Pantau data sekolah, aktivitas, dan pengaturan dari satu command center."

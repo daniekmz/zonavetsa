@@ -114,7 +114,7 @@ export function ImportGuruModal({ open, onOpenChange, onImportComplete }: Import
             </Button>
           </div>
 
-          <div className="rounded-lg border-2 border-dashed border-gray-200 p-6 text-center">
+          <div className="rounded-lg border-2 border-dashed border-gray-200 dark:border-slate-800 p-6 text-center">
             <input
               ref={fileInputRef}
               type="file"
@@ -128,7 +128,7 @@ export function ImportGuruModal({ open, onOpenChange, onImportComplete }: Import
               type="button"
             >
               {file ? <CheckCircle className="h-8 w-8 text-green-500" /> : <Upload className="h-8 w-8 text-gray-400" />}
-              <span className="text-sm text-gray-600">{file ? file.name : "Klik untuk pilih file Excel"}</span>
+              <span className="text-sm text-slate-600 dark:text-slate-300">{file ? file.name : "Klik untuk pilih file Excel"}</span>
             </button>
           </div>
 
@@ -148,7 +148,7 @@ export function ImportGuruModal({ open, onOpenChange, onImportComplete }: Import
                 </span>
               </div>
               {result.errors && result.errors.length > 0 && (
-                <div className="max-h-32 overflow-y-auto text-xs text-gray-600">
+                <div className="max-h-32 overflow-y-auto text-xs text-slate-600 dark:text-slate-300">
                   <p className="font-medium">Errors:</p>
                   <ul className="list-inside list-disc">
                     {result.errors.slice(0, 5).map((err, index) => (

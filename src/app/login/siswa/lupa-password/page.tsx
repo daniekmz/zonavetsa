@@ -116,7 +116,7 @@ export default function LupaPasswordPage() {
             </Button>
 
             <Link href="/login/siswa">
-              <Button variant="ghost" className="w-full mt-4 text-slate-500 dark:text-white/60 hover:text-primary dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl border border-transparent hover:border-slate-200 dark:hover:border-slate-700/70 h-11">
+              <Button variant="ghost" className="w-full mt-4 text-slate-500 dark:text-white/60 hover:text-primary dark:hover:text-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-white dark:hover:bg-slate-800/10 rounded-xl border border-transparent hover:border-slate-200 dark:border-slate-800 dark:hover:border-slate-700/70 h-11">
                 <ArrowLeft size={16} className="mr-2" />
                 Kembali ke Login
               </Button>
@@ -201,7 +201,7 @@ export default function LupaPasswordPage() {
           </form>
 
           <Link href="/login/siswa">
-            <Button variant="ghost" className="w-full mt-6 text-slate-500 dark:text-white/60 hover:text-primary dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl border border-transparent hover:border-slate-200 dark:hover:border-slate-700/70 h-11">
+            <Button variant="ghost" className="w-full mt-6 text-slate-500 dark:text-white/60 hover:text-primary dark:hover:text-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-white dark:hover:bg-slate-800/10 rounded-xl border border-transparent hover:border-slate-200 dark:border-slate-800 dark:hover:border-slate-700/70 h-11">
               <ArrowLeft size={16} className="mr-2" />
               Kembali ke Login
             </Button>

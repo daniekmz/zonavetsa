@@ -29,7 +29,7 @@ export default function NotFound() {
       </div>
 
       {/* Main Content */}
-      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md relative z-10 text-center">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-8 w-full max-w-md relative z-10 text-center">
         {/* 404 Number */}
         <div className="mb-6">
           <h1 className="text-8xl font-bold text-primary opacity-20">404</h1>
@@ -41,19 +41,19 @@ export default function NotFound() {
         </div>
 
         {/* Title */}
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">
+        <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">
           Halaman Tidak Ditemukan
         </h2>
 
         {/* Description */}
-        <p className="text-gray-500 mb-6">
+        <p className="text-slate-500 dark:text-slate-400 mb-6">
           Maaf, halaman yang Anda cari tidak ada atau telah dipindahkan. 
           Silakan pilih salah satu opsi di bawah ini.
         </p>
 
         {/* Auto-redirect notice */}
-        <div className="bg-gray-100 rounded-lg p-3 mb-6">
-          <p className="text-sm text-gray-600">
+        <div className="bg-gray-100 dark:bg-slate-800 rounded-lg p-3 mb-6">
+          <p className="text-sm text-slate-600 dark:text-slate-300">
             Anda akan diarahkan ke beranda dalam <span className="font-bold text-primary">5 detik</span>...
           </p>
         </div>

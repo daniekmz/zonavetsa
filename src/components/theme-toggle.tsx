@@ -48,7 +48,7 @@ export function ThemeToggle({ className }: { className?: string }) {
               "text-sm font-medium transition-colors duration-200",
               isActive
                 ? "bg-cyan-50 text-cyan-800 dark:bg-cyan-500/10 dark:text-cyan-200"
-                : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200 dark:hover:text-slate-200"
             )}
             title={option.label}
           >
@@ -132,7 +132,7 @@ export function ThemeToggleDropdown({ className }: { className?: string }) {
                   "text-sm transition-colors",
                   isActive
                     ? "text-primary dark:text-primary-foreground bg-primary/5 dark:bg-primary/10"
-                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-gray-800"
                 )}
               >
                 <Icon size={16} />

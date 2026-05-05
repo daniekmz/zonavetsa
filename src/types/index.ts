@@ -215,9 +215,10 @@ export interface Announcement {
   is_active?: boolean;
   created_at: string;
   expires_at?: string;
+  updated_at?: string;
 }
 
-export type NotificationType = "attendance" | "exam" | "file" | "assignment" | "system" | "profile" | "login";
+export type NotificationType = "attendance" | "exam" | "file" | "assignment" | "system" | "profile" | "login" | "announcement";
 export type NotificationPriority = "high" | "medium" | "low";
 
 export interface Notification {
@@ -259,6 +260,7 @@ export interface PortfolioItem {
   title: string;
   description?: string;
   image_url: string;
+  public_slug?: string | null;
   visibility_scope: "class" | "global";
   uploader_name?: string;
   uploader_class_id?: string | null;

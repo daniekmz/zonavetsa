@@ -1034,14 +1034,14 @@ export default function TeacherQRAbsenPage() {
     if (status === "present") return "bg-success/10 text-success";
     if (status === "late") return "bg-warning/10 text-warning";
     if (status === "absent") return "bg-danger/10 text-danger";
-    return "bg-slate-100 text-slate-600";
+    return "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300";
   };
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-primary">QR Absensi Guru</h2>
-        <p className="text-gray-500">
+        <p className="text-slate-500 dark:text-slate-400">
           Guru dapat scan QR siswa, melihat rekap absensi per tanggal, dan mengedit data absensi sesuai kelas.
         </p>
       </div>
@@ -1066,8 +1066,8 @@ export default function TeacherQRAbsenPage() {
 
         <TabsContent value="session" className="space-y-6">
           <div className="grid gap-6 lg:grid-cols-[1.1fr_1.4fr]">
-            <div className="rounded-xl bg-white p-6 shadow-sm">
-              <h3 className="mb-4 text-lg font-bold text-gray-800">Pengaturan Sesi</h3>
+            <div className="rounded-xl bg-white dark:bg-slate-900 p-6 shadow-sm">
+              <h3 className="mb-4 text-lg font-bold text-slate-800 dark:text-slate-100">Pengaturan Sesi</h3>
 
               {!currentSession ? (
                 <div className="space-y-4">
@@ -1121,21 +1121,21 @@ export default function TeacherQRAbsenPage() {
                         <QrCode size={22} />
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500">Sesi Aktif</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Sesi Aktif</p>
                         <p className="text-lg font-bold text-primary">{className}</p>
                       </div>
                     </div>
 
-                    <div className="mt-4 space-y-3 text-sm text-gray-600">
-                      <div className="flex items-center justify-between rounded-xl bg-white px-3 py-2">
+                    <div className="mt-4 space-y-3 text-sm text-slate-600 dark:text-slate-300">
+                      <div className="flex items-center justify-between rounded-xl bg-white dark:bg-slate-900 px-3 py-2">
                         <span>Kode sesi</span>
                         <span className="font-mono font-bold tracking-widest text-primary">{currentSession.code}</span>
                       </div>
-                      <div className="flex items-center justify-between rounded-xl bg-white px-3 py-2">
+                      <div className="flex items-center justify-between rounded-xl bg-white dark:bg-slate-900 px-3 py-2">
                         <span>Berakhir</span>
                         <span>{formatTime(currentSession.expires_at)}</span>
                       </div>
-                      <div className="flex items-center justify-between rounded-xl bg-white px-3 py-2">
+                      <div className="flex items-center justify-between rounded-xl bg-white dark:bg-slate-900 px-3 py-2">
                         <span>Sisa waktu</span>
                         <span className="font-semibold text-warning">{getTimeRemaining()}</span>
                       </div>
@@ -1157,7 +1157,7 @@ export default function TeacherQRAbsenPage() {
                     </Button>
                   </div>
 
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 p-4 text-sm text-slate-600 dark:text-slate-300">
                     Minta siswa membuka menu absensi lalu tunjukkan QR masing-masing ke kamera guru.
                   </div>
                 </div>
@@ -1165,11 +1165,11 @@ export default function TeacherQRAbsenPage() {
             </div>
 
             <div className="space-y-6">
-              <div className="rounded-xl bg-white p-6 shadow-sm">
+              <div className="rounded-xl bg-white dark:bg-slate-900 p-6 shadow-sm">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
-                    <h3 className="text-lg font-bold text-gray-800">Scan atau Input Manual</h3>
-                    <p className="text-sm text-gray-500">Guru mencatat absensi dari QR siswa atau NIS manual.</p>
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Scan atau Input Manual</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Guru mencatat absensi dari QR siswa atau NIS manual.</p>
                   </div>
                   <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
                     <Users size={14} className="mr-1 inline" />
@@ -1178,19 +1178,19 @@ export default function TeacherQRAbsenPage() {
                 </div>
 
                 {!currentSession ? (
-                  <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+                  <div className="rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
                     Mulai sesi absensi terlebih dahulu agar guru bisa scan QR siswa.
                   </div>
                 ) : (
                   <div className="space-y-5">
                     <div className="rounded-2xl border border-primary/10 bg-primary/5 p-4">
                       <div className="mb-4 flex items-center gap-3">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-primary shadow-sm">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white dark:bg-slate-900 text-primary shadow-sm">
                           <Camera size={22} />
                         </div>
                         <div>
-                          <p className="font-semibold text-gray-800">Scanner Guru</p>
-                          <p className="text-sm text-gray-500">Arahkan kamera ke QR siswa yang tampil di menu absensi siswa.</p>
+                          <p className="font-semibold text-slate-800 dark:text-slate-100">Scanner Guru</p>
+                          <p className="text-sm text-slate-500 dark:text-slate-400">Arahkan kamera ke QR siswa yang tampil di menu absensi siswa.</p>
                         </div>
                       </div>
 
@@ -1213,14 +1213,14 @@ export default function TeacherQRAbsenPage() {
                       )}
                     </div>
 
-                    <div className="rounded-2xl border border-slate-200 p-4">
+                    <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
                       <div className="mb-4 flex items-center gap-3">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
                           <Keyboard size={22} />
                         </div>
                         <div>
-                          <p className="font-semibold text-gray-800">Input Manual</p>
-                          <p className="text-sm text-gray-500">Gunakan jika kamera bermasalah atau QR siswa tidak bisa dibaca.</p>
+                          <p className="font-semibold text-slate-800 dark:text-slate-100">Input Manual</p>
+                          <p className="text-sm text-slate-500 dark:text-slate-400">Gunakan jika kamera bermasalah atau QR siswa tidak bisa dibaca.</p>
                         </div>
                       </div>
 
@@ -1300,9 +1300,9 @@ export default function TeacherQRAbsenPage() {
                 )}
               </div>
 
-              <div className="rounded-xl bg-white p-6 shadow-sm">
+              <div className="rounded-xl bg-white dark:bg-slate-900 p-6 shadow-sm">
                 <div className="mb-4 flex items-center justify-between">
-                  <h3 className="text-lg font-bold text-gray-800">Siswa yang Sudah Tercatat</h3>
+                  <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Siswa yang Sudah Tercatat</h3>
                   <Button onClick={exportSessionToExcel} variant="outline" size="sm" disabled={records.length === 0}>
                     <FileSpreadsheet size={14} />
                     Export
@@ -1310,7 +1310,7 @@ export default function TeacherQRAbsenPage() {
                 </div>
 
                 {records.length === 0 ? (
-                  <div className="py-12 text-center text-gray-500">
+                  <div className="py-12 text-center text-slate-500 dark:text-slate-400">
                     <CheckCircle size={48} className="mx-auto mb-3 opacity-40" />
                     <p>Belum ada absensi tercatat.</p>
                     <p className="text-sm">Guru dapat scan QR siswa atau input manual dari kelas aktif.</p>
@@ -1318,14 +1318,14 @@ export default function TeacherQRAbsenPage() {
                 ) : (
                   <div className="space-y-3">
                     {records.map((record) => (
-                      <div key={record.id} className="flex items-center justify-between rounded-lg bg-gray-50 p-3">
+                      <div key={record.id} className="flex items-center justify-between rounded-lg bg-gray-50 dark:bg-slate-800 p-3">
                         <div className="flex items-center gap-3">
                           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-success/10 text-success">
                             <CheckCircle size={20} />
                           </div>
                           <div>
-                            <p className="font-medium text-gray-800">{record.student?.name || record.student_nis}</p>
-                            <p className="text-sm text-gray-500">
+                            <p className="font-medium text-slate-800 dark:text-slate-100">{record.student?.name || record.student_nis}</p>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">
                               NIS: {record.student?.nis || record.student_nis}
                               {record.source ? ` • ${getSourceLabel(record.source)}` : ""}
                             </p>
@@ -1333,7 +1333,7 @@ export default function TeacherQRAbsenPage() {
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-medium text-success">{getStatusLabel(record.status)}</p>
-                          <p className="text-xs text-gray-500">{formatTime(record.recorded_at)}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">{formatTime(record.recorded_at)}</p>
                         </div>
                       </div>
                     ))}
@@ -1341,31 +1341,31 @@ export default function TeacherQRAbsenPage() {
                 )}
               </div>
 
-              <div className="rounded-xl bg-white p-6 shadow-sm">
+              <div className="rounded-xl bg-white dark:bg-slate-900 p-6 shadow-sm">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
-                    <h3 className="text-lg font-bold text-gray-800">Daftar Siswa Kelas Aktif</h3>
-                    <p className="text-sm text-gray-500">
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Daftar Siswa Kelas Aktif</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
                       Pantau langsung siapa yang sudah absen dan siapa yang belum absen.
                     </p>
                   </div>
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700">
+                  <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1 text-sm font-medium text-slate-700 dark:text-slate-200">
                     {activeSessionRows.length} siswa
                   </span>
                 </div>
 
                 {!activeClassId ? (
-                  <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+                  <div className="rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
                     Pilih kelas atau mulai sesi absensi untuk menampilkan daftar siswa.
                   </div>
                 ) : activeSessionRows.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+                  <div className="rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
                     Belum ada data siswa pada kelas ini.
                   </div>
                 ) : (
                   <div className="space-y-3">
                     {activeSessionRows.map((row) => (
-                      <div key={row.student.nis} className="flex items-center justify-between rounded-lg bg-gray-50 p-3">
+                      <div key={row.student.nis} className="flex items-center justify-between rounded-lg bg-gray-50 dark:bg-slate-800 p-3">
                         <div className="flex items-center gap-3">
                           <div
                             className={`flex h-10 w-10 items-center justify-center rounded-full ${
@@ -1375,17 +1375,17 @@ export default function TeacherQRAbsenPage() {
                                 ? "bg-warning/10 text-warning"
                                 : row.state === "absent"
                                 ? "bg-danger/10 text-danger"
-                                : "bg-slate-200 text-slate-600"
+                                : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
                             }`}
                           >
                             <Users size={18} />
                           </div>
                           <div>
-                            <p className="font-medium text-gray-800">
+                            <p className="font-medium text-slate-800 dark:text-slate-100">
                               {row.student.absen ? `${row.student.absen}. ` : ""}
                               {row.student.name}
                             </p>
-                            <p className="text-sm text-gray-500">NIS: {row.student.nis}</p>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">NIS: {row.student.nis}</p>
                           </div>
                         </div>
                         <div className="text-right">
@@ -1397,12 +1397,12 @@ export default function TeacherQRAbsenPage() {
                                 ? "text-warning"
                                 : row.state === "absent"
                                 ? "text-danger"
-                                : "text-slate-500"
+                                : "text-slate-500 dark:text-slate-400"
                             }`}
                           >
                             {getStatusLabel(row.state)}
                           </p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
                             {row.record?.recorded_at ? formatTime(row.record.recorded_at) : "Belum absen"}
                           </p>
                         </div>
@@ -1416,7 +1416,7 @@ export default function TeacherQRAbsenPage() {
         </TabsContent>
 
         <TabsContent value="history" className="space-y-6">
-          <div className="rounded-xl bg-white p-6 shadow-sm">
+          <div className="rounded-xl bg-white dark:bg-slate-900 p-6 shadow-sm">
             <div className="grid gap-4 lg:grid-cols-[1fr_1fr_auto]">
               <div className="space-y-2">
                 <Label htmlFor="recap-class">Kelas</Label>
@@ -1458,24 +1458,24 @@ export default function TeacherQRAbsenPage() {
 
             <div className="mt-5 grid gap-3 md:grid-cols-4">
               <div className="rounded-2xl border border-success/20 bg-success/10 p-4">
-                <p className="text-sm text-gray-500">Hadir</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Hadir</p>
                 <p className="mt-1 text-2xl font-bold text-success">{dailySummary.present}</p>
               </div>
               <div className="rounded-2xl border border-warning/20 bg-warning/10 p-4">
-                <p className="text-sm text-gray-500">Terlambat</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Terlambat</p>
                 <p className="mt-1 text-2xl font-bold text-warning">{dailySummary.late}</p>
               </div>
               <div className="rounded-2xl border border-danger/20 bg-danger/10 p-4">
-                <p className="text-sm text-gray-500">Tidak Hadir</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Tidak Hadir</p>
                 <p className="mt-1 text-2xl font-bold text-danger">{dailySummary.absent}</p>
               </div>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-sm text-gray-500">Belum Absen</p>
-                <p className="mt-1 text-2xl font-bold text-slate-700">{dailySummary.unrecorded}</p>
+              <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 p-4">
+                <p className="text-sm text-slate-500 dark:text-slate-400">Belum Absen</p>
+                <p className="mt-1 text-2xl font-bold text-slate-700 dark:text-slate-200">{dailySummary.unrecorded}</p>
               </div>
             </div>
 
-            <div className="mt-5 rounded-2xl border border-primary/10 bg-primary/5 p-4 text-sm text-slate-600">
+            <div className="mt-5 rounded-2xl border border-primary/10 bg-primary/5 p-4 text-sm text-slate-600 dark:text-slate-300">
               <p className="font-semibold text-primary">Ringkasan Rekap</p>
               <p className="mt-1">
                 Rekap tanggal <span className="font-medium">{new Date(`${recapDate}T00:00:00`).toLocaleDateString("id-ID")}</span> untuk kelas{" "}
@@ -1487,11 +1487,11 @@ export default function TeacherQRAbsenPage() {
             </div>
           </div>
 
-          <div className="rounded-xl bg-white p-6 shadow-sm">
+          <div className="rounded-xl bg-white dark:bg-slate-900 p-6 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-bold text-gray-800">Daftar Siswa dan Status Absensi</h3>
-                <p className="text-sm text-gray-500">Daftar mengikuti data siswa pada kelas yang dipilih.</p>
+                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Daftar Siswa dan Status Absensi</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Daftar mengikuti data siswa pada kelas yang dipilih.</p>
               </div>
               <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
                 <Users size={14} className="mr-1 inline" />
@@ -1500,57 +1500,57 @@ export default function TeacherQRAbsenPage() {
             </div>
 
             {isLoadingDailyRecap ? (
-              <div className="py-12 text-center text-gray-500">
+              <div className="py-12 text-center text-slate-500 dark:text-slate-400">
                 <Clock size={40} className="mx-auto mb-3 opacity-40" />
                 <p>Memuat rekap absensi...</p>
               </div>
             ) : dailyRows.length === 0 ? (
-              <div className="py-12 text-center text-gray-500">
+              <div className="py-12 text-center text-slate-500 dark:text-slate-400">
                 <Users size={40} className="mx-auto mb-3 opacity-40" />
                 <p>Belum ada data siswa pada kelas ini.</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {dailyRows.map((row) => (
-                  <div key={row.student.nis} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <div key={row.student.nis} className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 p-4">
                     <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                       <div className="flex items-center gap-3">
                         <div className={`flex h-11 w-11 items-center justify-center rounded-full ${getStatusClassName(row.state)}`}>
                           <CheckCircle size={20} />
                         </div>
                         <div>
-                          <p className="font-medium text-gray-800">
+                          <p className="font-medium text-slate-800 dark:text-slate-100">
                             {row.student.absen ? `${row.student.absen}. ` : ""}
                             {row.student.name}
                           </p>
-                          <p className="text-sm text-gray-500">NIS: {row.student.nis}</p>
+                          <p className="text-sm text-slate-500 dark:text-slate-400">NIS: {row.student.nis}</p>
                         </div>
                       </div>
 
-                      <div className="grid gap-2 text-sm text-gray-500 sm:grid-cols-3 lg:min-w-[460px]">
+                      <div className="grid gap-2 text-sm text-slate-500 dark:text-slate-400 sm:grid-cols-3 lg:min-w-[460px]">
                         <div>
                           <p className="text-xs uppercase tracking-wide text-gray-400">Status</p>
-                          <p className="font-medium text-gray-700">{getStatusLabel(row.state)}</p>
+                          <p className="font-medium text-slate-700 dark:text-slate-200">{getStatusLabel(row.state)}</p>
                         </div>
                         <div>
                           <p className="text-xs uppercase tracking-wide text-gray-400">Waktu</p>
-                          <p className="font-medium text-gray-700">
+                          <p className="font-medium text-slate-700 dark:text-slate-200">
                             {row.record?.recorded_at ? formatDateTime(row.record.recorded_at) : "Belum tercatat"}
                           </p>
                         </div>
                         <div>
                           <p className="text-xs uppercase tracking-wide text-gray-400">Sumber</p>
-                          <p className="font-medium text-gray-700">
+                          <p className="font-medium text-slate-700 dark:text-slate-200">
                             {row.record ? getSourceLabel(row.record.source) : "Belum absen"}
                           </p>
                         </div>
                       </div>
                     </div>
 
-                    <div className="mt-3 flex flex-col gap-3 rounded-xl bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="mt-3 flex flex-col gap-3 rounded-xl bg-white dark:bg-slate-900 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="min-w-0">
                         <p className="text-xs uppercase tracking-wide text-gray-400">Catatan</p>
-                        <p className="truncate text-sm text-gray-600">
+                        <p className="truncate text-sm text-slate-600 dark:text-slate-300">
                           {row.record?.notes || (row.state === "unrecorded" ? "Belum ada catatan absensi untuk siswa ini." : "-")}
                         </p>
                       </div>
@@ -1578,9 +1578,9 @@ export default function TeacherQRAbsenPage() {
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="font-medium text-gray-800">{editingRow?.student.name}</p>
-              <p className="text-sm text-gray-500">NIS {editingRow?.student.nis}</p>
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 p-4">
+              <p className="font-medium text-slate-800 dark:text-slate-100">{editingRow?.student.name}</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">NIS {editingRow?.student.nis}</p>
             </div>
 
             <div className="space-y-2">

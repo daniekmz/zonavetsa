@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Briefcase, Globe, MessageSquare, Search, ThumbsUp, Trash2, Users } from "lucide-react";
+import { Briefcase, Globe, MessageSquare, Search, ThumbsUp, Trash2, Users, FileText, ExternalLink, Copy } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar } from "@/components/avatar";
 import { toast } from "@/components/ui/toast";
+import { buildPortfolioPublicUrl, getPortfolioPrimaryUrl, isHtmlPortfolioFile } from "@/lib/portfolio-links";
+import { getPortfolioFileKind } from "@/components/portfolio-file-preview";
 import type { PortfolioItem } from "@/types";
 
 interface PortfolioAdminItem extends PortfolioItem {
@@ -111,16 +113,33 @@ export default function AdminGaleriPage() {
     }
   };
 
+  const handleCopyPublicLink = async (item: PortfolioAdminItem) => {
+    if (!item.public_slug) {
+      toast("Link publik belum tersedia untuk karya ini", "error");
+      return;
+    }
+
+    try {
+      const publicUrl = buildPortfolioPublicUrl(item.public_slug);
+      if (!publicUrl) throw new Error("Public URL unavailable");
+      await navigator.clipboard.writeText(publicUrl);
+      toast("Link karya berhasil disalin", "success");
+    } catch (error) {
+      console.error("Copy public link failed:", error);
+      toast("Gagal menyalin link karya", "error");
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+      <div className="rounded-2xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
         <div className="flex items-center gap-4">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <Briefcase size={28} />
           </div>
           <div>
             <h2 className="text-2xl font-bold text-primary">Monitoring Galeri Karya</h2>
-            <p className="text-gray-500">Admin dapat memantau dan mengelola seluruh karya publik siswa.</p>
+            <p className="text-slate-500 dark:text-slate-400">Admin dapat memantau dan mengelola seluruh karya publik siswa.</p>
           </div>
         </div>
 
@@ -136,17 +155,27 @@ export default function AdminGaleriPage() {
       </div>
 
       {isLoading ? (
-        <div className="rounded-2xl bg-white p-8 text-center">Memuat data galeri...</div>
+        <div className="rounded-2xl bg-white dark:bg-slate-900 p-8 text-center">Memuat data galeri...</div>
       ) : filteredItems.length === 0 ? (
-        <div className="rounded-2xl border-2 border-dashed border-gray-200 bg-white py-16 text-center text-gray-500">
+        <div className="rounded-2xl border-2 border-dashed border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-16 text-center text-slate-500 dark:text-slate-400">
           Belum ada karya galeri.
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
           {filteredItems.map((item) => (
-            <div key={item.id} className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
-              <div className="relative h-52 overflow-hidden bg-gray-100">
-                <img src={item.image_url} alt={item.title} className="h-full w-full object-cover" />
+            <div key={item.id} className="overflow-hidden rounded-2xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+              <div className="relative h-52 overflow-hidden bg-gray-100 dark:bg-slate-800">
+                {getPortfolioFileKind(item.image_url) === "image" ? (
+                  <img src={item.image_url} alt={item.title} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full flex-col items-center justify-center gap-2 px-4 text-center">
+                    <FileText size={44} className="text-primary" />
+                    <p className="line-clamp-2 text-sm font-semibold text-slate-700 dark:text-slate-200">{item.title}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {isHtmlPortfolioFile(item.image_url) ? "Tersedia link publik HTML" : "Preview file non-gambar"}
+                    </p>
+                  </div>
+                )}
                 <div className="absolute left-3 top-3 inline-flex items-center rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white">
                   {item.visibility_scope === "global" ? (
                     <>
@@ -164,18 +193,35 @@ export default function AdminGaleriPage() {
                 <div className="flex items-center gap-3">
                   <Avatar src={null} name={item.uploader_name || item.student_nis} size="md" />
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-bold text-gray-800">{item.uploader_name || item.student_nis}</p>
-                    <p className="text-xs text-gray-500">{item.uploader_class_name || "-"}</p>
+                    <p className="truncate text-sm font-bold text-slate-800 dark:text-slate-100">{item.uploader_name || item.student_nis}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{item.uploader_class_name || "-"}</p>
                   </div>
                 </div>
 
                 <div>
                   <h3 className="line-clamp-1 text-lg font-bold text-primary">{item.title}</h3>
-                  <p className="mt-1 line-clamp-3 text-sm text-gray-500">{item.description || "Tanpa deskripsi"}</p>
+                  <p className="mt-1 line-clamp-3 text-sm text-slate-500 dark:text-slate-400">{item.description || "Tanpa deskripsi"}</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <a
+                      href={getPortfolioPrimaryUrl(item)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center rounded-md border border-gray-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-gray-100 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-800"
+                    >
+                      <ExternalLink size={14} className="mr-2" />
+                      {isHtmlPortfolioFile(item.image_url) && item.public_slug ? "Buka Link" : "Buka File"}
+                    </a>
+                    {isHtmlPortfolioFile(item.image_url) && item.public_slug ? (
+                      <Button variant="outline" size="sm" onClick={() => void handleCopyPublicLink(item)}>
+                        <Copy size={14} className="mr-2" />
+                        Copy Link
+                      </Button>
+                    ) : null}
+                  </div>
                 </div>
 
-                <div className="flex items-center justify-between border-t border-gray-100 pt-4">
-                  <div className="flex items-center gap-3 text-gray-500">
+                <div className="flex items-center justify-between border-t border-gray-100 dark:border-slate-800 pt-4">
+                  <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400">
                     <span className="flex items-center gap-1 text-xs font-medium">
                       <ThumbsUp size={14} /> {item.like_count}
                     </span>
@@ -204,4 +250,3 @@ export default function AdminGaleriPage() {
     </div>
   );
 }
-

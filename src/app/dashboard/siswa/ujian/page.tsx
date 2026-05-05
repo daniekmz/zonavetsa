@@ -166,7 +166,7 @@ export default function StudentExamPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-3xl border border-slate-200/70 bg-[radial-gradient(circle_at_top_left,_rgba(0,43,91,0.12),_transparent_42%),linear-gradient(135deg,_#ffffff,_#edf4ff)] p-6 shadow-sm dark:border-slate-800 dark:bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.16),_transparent_38%),linear-gradient(135deg,_rgba(15,23,42,0.96),_rgba(15,23,42,0.82))]">
+      <section className="rounded-3xl border border-slate-200/70 bg-[radial-gradient(circle_at_top_left,_rgba(0,43,91,0.12),_transparent_42%),linear-gradient(135deg,_#ffffff,_#edf4ff)] dark:bg-none dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-sm dark:border-slate-800 dark:bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.16),_transparent_38%),linear-gradient(135deg,_rgba(15,23,42,0.96),_rgba(15,23,42,0.82))]">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl space-y-3">
             <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-primary dark:bg-slate-900/70 dark:text-sky-200">
@@ -191,7 +191,7 @@ export default function StudentExamPage() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/80">
+      <section className="rounded-2xl border border-slate-200/80 bg-white dark:bg-slate-900 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/80">
         <div className="relative max-w-xl">
           <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <Input
@@ -208,7 +208,7 @@ export default function StudentExamPage() {
           {[...Array(4)].map((_, index) => (
             <div
               key={index}
-              className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/80"
+              className="rounded-2xl border border-slate-200 bg-white dark:bg-slate-900 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/80"
             >
               <div className="h-5 w-1/2 animate-pulse rounded bg-slate-200 dark:bg-slate-800" />
               <div className="mt-4 h-4 w-4/5 animate-pulse rounded bg-slate-200 dark:bg-slate-800" />
@@ -217,8 +217,8 @@ export default function StudentExamPage() {
           ))}
         </div>
       ) : filteredExams.length === 0 ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900/80">
-          <ClipboardList size={56} className="mx-auto mb-4 text-slate-300 dark:text-slate-600" />
+        <div className="rounded-2xl border border-slate-200 bg-white dark:bg-slate-900 p-12 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900/80">
+          <ClipboardList size={56} className="mx-auto mb-4 text-slate-300 dark:text-slate-600 dark:text-slate-300" />
           <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
             {searchTerm ? "Ujian tidak ditemukan" : "Belum ada ujian aktif"}
           </h3>
@@ -242,7 +242,7 @@ export default function StudentExamPage() {
             return (
               <article
                 key={exam.id}
-                className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md dark:border-slate-800 dark:bg-slate-900/80"
+                className="rounded-2xl border border-slate-200 bg-white dark:bg-slate-900 p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md dark:border-slate-800 dark:bg-slate-900/80"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-3">

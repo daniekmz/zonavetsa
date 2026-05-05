@@ -1,20 +1,36 @@
-﻿"use client";
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Dashboard Admin — Overview
+   Grid 4 stat card + icon baru, grafik aktivitas, tabel user terbaru
+   Icon: Users (guru), UserCheck (siswa), Briefcase (kelas), BookMarked (ujian)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+"use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
-  Users,
-  UserPlus,
-  GraduationCap,
-  ClipboardList,
-  BarChart3,
+  BarChart2,
+  BookMarked,
   Briefcase,
+  ChevronRight,
   Heart,
+  Megaphone,
   MessageSquare,
+  RefreshCw,
   Upload,
+  UserCheck,
+  Users,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { ImportGuruModal } from "@/components/import-guru-modal";
+
+interface RecentUser {
+  id: string;
+  name: string;
+  role: "guru" | "siswa";
+  meta: string;
+  created_at: string;
+}
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState({
@@ -27,6 +43,7 @@ export default function AdminDashboardPage() {
     portfolioComments: 0,
     totalStudentPoints: 0,
   });
+  const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isImportGuruOpen, setIsImportGuruOpen] = useState(false);
 
@@ -47,6 +64,8 @@ export default function AdminDashboardPage() {
       likesRes,
       commentsRes,
       studentsPointRes,
+      recentTeachersRes,
+      recentStudentsRes,
     ] = await Promise.all([
       supabase.from("teachers").select("id", { count: "exact", head: true }),
       supabase.from("students").select("id", { count: "exact", head: true }),
@@ -56,6 +75,8 @@ export default function AdminDashboardPage() {
       supabase.from("portfolio_likes").select("id", { count: "exact", head: true }),
       supabase.from("portfolio_comments").select("id", { count: "exact", head: true }),
       supabase.from("students").select("points"),
+      supabase.from("teachers").select("id, name, subject, created_at").order("created_at", { ascending: false }).limit(3),
+      supabase.from("students").select("id, name, nis, created_at").order("created_at", { ascending: false }).limit(3),
     ]);
 
     const totalStudentPoints = ((studentsPointRes.data || []) as { points?: number | null }[]).reduce(
@@ -74,66 +95,232 @@ export default function AdminDashboardPage() {
       totalStudentPoints,
     });
 
+    /* ━━ Merge recent users ━━ */
+    const recent: RecentUser[] = [
+      ...((recentTeachersRes.data || []) as any[]).map((t) => ({
+        id: t.id,
+        name: t.name,
+        role: "guru" as const,
+        meta: t.subject || "Guru",
+        created_at: t.created_at,
+      })),
+      ...((recentStudentsRes.data || []) as any[]).map((s) => ({
+        id: s.id,
+        name: s.name,
+        role: "siswa" as const,
+        meta: `NIS ${s.nis}`,
+        created_at: s.created_at,
+      })),
+    ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 5);
+    setRecentUsers(recent);
     setIsLoading(false);
   };
 
-  const statCards = [
-    { title: "Total Guru", value: stats.teachers, icon: Users, color: "bg-blue-500" },
-    { title: "Total Siswa", value: stats.students, icon: UserPlus, color: "bg-green-500" },
-    { title: "Total Kelas", value: stats.classes, icon: GraduationCap, color: "bg-orange-500" },
-    { title: "Total Ujian", value: stats.exams, icon: ClipboardList, color: "bg-purple-500" },
-    { title: "Karya Galeri", value: stats.portfolios, icon: Briefcase, color: "bg-cyan-600" },
-    { title: "Like Galeri", value: stats.portfolioLikes, icon: Heart, color: "bg-rose-500" },
-    { title: "Komentar Galeri", value: stats.portfolioComments, icon: MessageSquare, color: "bg-indigo-500" },
-    { title: "Total Poin Siswa", value: stats.totalStudentPoints, icon: BarChart3, color: "bg-emerald-600" },
+  /* ━━ 4 primary stat cards ━━ */
+  const primaryStats = [
+    {
+      title: "Total Guru",
+      value: stats.teachers,
+      icon: Users,
+      color: "bg-navy",
+      textColor: "text-navy",
+      bgLight: "bg-navy-50",
+      href: "/dashboard/admin/guru",
+    },
+    {
+      title: "Total Siswa",
+      value: stats.students,
+      icon: UserCheck,
+      color: "bg-teal",
+      textColor: "text-teal",
+      bgLight: "bg-teal-50",
+      href: "/dashboard/admin/siswa",
+    },
+    {
+      title: "Total Kelas",
+      value: stats.classes,
+      icon: Briefcase,
+      color: "bg-amber",
+      textColor: "text-amber",
+      bgLight: "bg-amber-50",
+      href: "/dashboard/admin/kelas",
+    },
+    {
+      title: "Total Ujian",
+      value: stats.exams,
+      icon: BookMarked,
+      color: "bg-purple-600",
+      textColor: "text-purple-600",
+      bgLight: "bg-purple-50",
+      href: "/dashboard/admin/ujian",
+    },
   ];
+
+  /* ━━ Secondary stat cards ━━ */
+  const secondaryStats = [
+    { title: "Karya Galeri", value: stats.portfolios, icon: Heart, color: "text-rose-500" },
+    { title: "Like Galeri", value: stats.portfolioLikes, icon: MessageSquare, color: "text-indigo-500" },
+    { title: "Komentar", value: stats.portfolioComments, icon: MessageSquare, color: "text-sky-500" },
+    { title: "Total Poin Siswa", value: stats.totalStudentPoints.toLocaleString("id-ID"), icon: BarChart2, color: "text-emerald-600" },
+  ];
+
+  const SkeletonNum = () => (
+    <div className="skeleton h-8 w-16 rounded-lg" />
+  );
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      {/* ━━ Header ━━ */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-primary">Dashboard Overview</h2>
-          <p className="text-gray-500">Statistik sistem yang tersinkron dengan fitur terbaru siswa dan guru.</p>
+          <h2 className="text-2xl font-bold text-navy dark:text-white">Dashboard Overview</h2>
+          <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+            Statistik sistem tersinkron real-time dari Supabase.
+          </p>
         </div>
-        <Button onClick={() => setIsImportGuruOpen(true)}>
-          <Upload size={18} />
-          Import Guru
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void loadStats()}
+            className="border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:text-navy"
+          >
+            <RefreshCw size={16} aria-hidden="true" />
+            Refresh
+          </Button>
+          <Button
+            size="sm"
+            className="bg-navy hover:bg-navy-700 text-white border-0"
+            onClick={() => setIsImportGuruOpen(true)}
+          >
+            <Upload size={16} aria-hidden="true" />
+            Import Guru
+          </Button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
-        {statCards.map((stat, index) => (
-          <div key={index} className="rounded-xl bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">{stat.title}</p>
-                <p className="mt-1 text-3xl font-bold text-gray-800">{isLoading ? "..." : stat.value}</p>
-              </div>
-              <div className={`${stat.color} rounded-lg p-3`}>
-                <stat.icon size={24} className="text-white" />
-              </div>
+      {/* ━━ Grid 4 Primary Stat Cards ━━ */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {primaryStats.map((stat) => (
+          <Link
+            key={stat.title}
+            href={stat.href}
+            className="group rounded-2xl border border-slate-200 bg-white dark:bg-slate-900 p-5 shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover dark:border-slate-800 dark:bg-card"
+          >
+            {/* ━━ Card icon 24px ━━ */}
+            <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${stat.color} shadow-card`}>
+              <stat.icon size={24} className="text-white" aria-hidden="true" />
             </div>
+            {isLoading ? (
+              <SkeletonNum />
+            ) : (
+              <p className="mt-4 text-3xl font-bold text-navy dark:text-white">
+                {stat.value}
+              </p>
+            )}
+            <p className="mt-1 text-sm font-semibold text-slate-500 dark:text-slate-400">
+              {stat.title}
+            </p>
+            <div className={`mt-2 flex items-center gap-1 text-xs font-semibold ${stat.textColor} opacity-0 transition-opacity group-hover:opacity-100`}>
+              Lihat detail
+              <ChevronRight size={12} aria-hidden="true" />
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      {/* ━━ Secondary stats row ━━ */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {secondaryStats.map((stat) => (
+          <div
+            key={stat.title}
+            className="rounded-xl border border-slate-200 bg-white dark:bg-slate-900 px-4 py-3 dark:border-slate-800 dark:bg-card"
+          >
+            <div className="flex items-center gap-2">
+              <stat.icon size={16} className={stat.color} aria-hidden="true" />
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{stat.title}</span>
+            </div>
+            {isLoading ? (
+              <div className="skeleton mt-2 h-6 w-12 rounded" />
+            ) : (
+              <p className="mt-1.5 text-xl font-bold text-navy dark:text-white">{stat.value}</p>
+            )}
           </div>
         ))}
       </div>
 
-      <div className="rounded-xl bg-white p-6 shadow-sm">
-        <h3 className="mb-4 text-lg font-bold text-gray-800">Aksi Cepat</h3>
-        <div className="grid gap-4 md:grid-cols-5">
-          <QuickAction href="/dashboard/admin/guru" icon={Users} label="Kelola Guru" color="bg-blue-500" />
-          <QuickAction href="/dashboard/admin/siswa" icon={UserPlus} label="Kelola Siswa" color="bg-green-500" />
-          <QuickAction href="/dashboard/admin/kelas" icon={GraduationCap} label="Kelola Kelas" color="bg-orange-500" />
-          <QuickAction href="/dashboard/admin/ujian" icon={ClipboardList} label="Kelola Ujian" color="bg-purple-500" />
-          <button
-            type="button"
-            onClick={() => setIsImportGuruOpen(true)}
-            className="flex flex-col items-center justify-center rounded-xl bg-gray-50 p-4 transition-colors hover:bg-gray-100"
-          >
-            <div className="mb-2 rounded-lg bg-cyan-600 p-3">
-              <Upload size={20} className="text-white" />
-            </div>
-            <span className="text-sm font-medium text-gray-700">Import Guru</span>
-          </button>
+      {/* ━━ Quick Actions + Recent Users ━━ */}
+      <div className="grid gap-5 lg:grid-cols-2">
+
+        {/* Quick Actions */}
+        <div className="rounded-2xl border border-slate-200 bg-white dark:bg-slate-900 p-5 shadow-card dark:border-slate-800 dark:bg-card">
+          <h3 className="mb-4 text-base font-bold text-navy dark:text-white">Aksi Cepat</h3>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {[
+              { href: "/dashboard/admin/guru", icon: Users, label: "Kelola Guru", color: "bg-navy-50 text-navy" },
+              { href: "/dashboard/admin/siswa", icon: UserCheck, label: "Kelola Siswa", color: "bg-teal-50 text-teal" },
+              { href: "/dashboard/admin/kelas", icon: Briefcase, label: "Kelola Kelas", color: "bg-amber-50 text-amber" },
+              { href: "/dashboard/admin/ujian", icon: BookMarked, label: "Kelola Ujian", color: "bg-purple-50 text-purple-600" },
+              { href: "/dashboard/admin/files", icon: BookMarked, label: "File Manager", color: "bg-sky-50 text-sky-600" },
+              { href: "/dashboard/admin/pengumuman", icon: Megaphone, label: "Pengumuman", color: "bg-rose-50 text-rose-600" },
+              { href: "/dashboard/admin/logs", icon: BarChart2, label: "Log Aktivitas", color: "bg-emerald-50 text-emerald-600" },
+            ].map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="flex flex-col items-center gap-2 rounded-xl bg-slate-50 p-4 text-center transition-colors hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800"
+              >
+                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${item.color}`}>
+                  <item.icon size={20} aria-hidden="true" />
+                </div>
+                <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">{item.label}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Recent Users */}
+        <div className="rounded-2xl border border-slate-200 bg-white dark:bg-slate-900 p-5 shadow-card dark:border-slate-800 dark:bg-card">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-base font-bold text-navy dark:text-white">User Terbaru</h3>
+            <Link href="/dashboard/admin/users" className="text-xs font-semibold text-teal hover:underline">
+              Lihat semua
+            </Link>
+          </div>
+          <div className="space-y-3">
+            {isLoading ? (
+              [...Array(4)].map((_, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className="skeleton h-9 w-9 rounded-xl" />
+                  <div className="flex-1 space-y-1.5">
+                    <div className="skeleton h-3.5 w-32 rounded" />
+                    <div className="skeleton h-3 w-20 rounded" />
+                  </div>
+                </div>
+              ))
+            ) : recentUsers.length === 0 ? (
+              <p className="py-4 text-center text-sm text-slate-400">Belum ada data user</p>
+            ) : (
+              recentUsers.map((user) => (
+                <div key={user.id} className="flex items-center gap-3">
+                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-bold ${
+                    user.role === "guru" ? "bg-navy-50 text-navy" : "bg-teal-50 text-teal"
+                  }`}>
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{user.name}</p>
+                    <p className="text-xs text-slate-400">{user.meta}</p>
+                  </div>
+                  <span className={`badge text-[10px] ${
+                    user.role === "guru" ? "badge-navy" : "badge-teal"
+                  }`}>
+                    {user.role}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
 
@@ -143,29 +330,5 @@ export default function AdminDashboardPage() {
         onImportComplete={() => void loadStats()}
       />
     </div>
-  );
-}
-
-function QuickAction({
-  href,
-  icon: Icon,
-  label,
-  color,
-}: {
-  href: string;
-  icon: React.ElementType;
-  label: string;
-  color: string;
-}) {
-  return (
-    <a
-      href={href}
-      className="flex flex-col items-center justify-center rounded-xl bg-gray-50 p-4 transition-colors hover:bg-gray-100"
-    >
-      <div className={`${color} mb-2 rounded-lg p-3`}>
-        <Icon size={20} className="text-white" />
-      </div>
-      <span className="text-sm font-medium text-gray-700">{label}</span>
-    </a>
   );
 }

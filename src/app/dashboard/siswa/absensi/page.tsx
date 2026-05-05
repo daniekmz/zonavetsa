@@ -280,7 +280,7 @@ export default function StudentAttendancePage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-primary">Absensi Siswa</h2>
-          <p className="text-gray-500">Tampilkan QR ini ke guru agar kehadiran Anda discan.</p>
+          <p className="text-slate-500 dark:text-slate-400">Tampilkan QR ini ke guru agar kehadiran Anda discan.</p>
         </div>
       </div>
 
@@ -290,29 +290,29 @@ export default function StudentAttendancePage() {
         </div>
       ) : (
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="rounded-xl bg-white p-6 shadow-sm">
+          <div className="rounded-xl bg-white dark:bg-slate-900 p-6 shadow-sm">
             <div className="mb-6 text-center">
               <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
                 <QrCode size={40} className="text-primary" />
               </div>
-              <h3 className="text-lg font-bold text-gray-800">QR Kehadiran Anda</h3>
-              <p className="text-sm text-gray-500">Buka halaman ini saat guru melakukan scan absensi.</p>
+              <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">QR Kehadiran Anda</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Buka halaman ini saat guru melakukan scan absensi.</p>
             </div>
 
             <div className="flex flex-col items-center">
-              <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
                 <canvas ref={canvasRef} className="rounded-2xl" />
               </div>
 
-              <div className="mt-5 w-full rounded-2xl bg-slate-50 p-4">
+              <div className="mt-5 w-full rounded-2xl bg-slate-50 dark:bg-slate-800 p-4">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-primary shadow-sm">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white dark:bg-slate-900 text-primary shadow-sm">
                     <UserSquare2 size={22} />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm text-gray-500">Identitas Siswa</p>
-                    <p className="truncate text-lg font-bold text-gray-800">{student?.name || "-"}</p>
-                    <p className="text-sm text-gray-500">NIS {student?.nis || "-"}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Identitas Siswa</p>
+                    <p className="truncate text-lg font-bold text-slate-800 dark:text-slate-100">{student?.name || "-"}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">NIS {student?.nis || "-"}</p>
                   </div>
                 </div>
               </div>
@@ -337,8 +337,8 @@ export default function StudentAttendancePage() {
           </div>
 
           <div className="space-y-6">
-            <div className="rounded-xl bg-white p-6 shadow-sm">
-              <h3 className="mb-4 text-lg font-bold text-gray-800">Status Sesi Guru</h3>
+            <div className="rounded-xl bg-white dark:bg-slate-900 p-6 shadow-sm">
+              <h3 className="mb-4 text-lg font-bold text-slate-800 dark:text-slate-100">Status Sesi Guru</h3>
 
               {session ? (
                 <div className="rounded-2xl border border-success/20 bg-success/10 p-4">
@@ -346,7 +346,7 @@ export default function StudentAttendancePage() {
                     <CheckCircle size={18} />
                     <span className="font-medium">Guru sedang membuka sesi absensi</span>
                   </div>
-                  <p className="mt-2 text-sm text-gray-600">
+                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
                     Tunjukkan QR Anda sebelum pukul{" "}
                     {new Date(session.expires_at).toLocaleTimeString("id-ID", {
                       hour: "2-digit",
@@ -361,21 +361,21 @@ export default function StudentAttendancePage() {
                     <Clock size={18} />
                     <span className="font-medium">Belum ada sesi absensi aktif</span>
                   </div>
-                  <p className="mt-2 text-sm text-gray-600">
+                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
                     Tunggu guru memulai sesi, lalu tunjukkan QR Anda saat diminta.
                   </p>
                 </div>
               )}
             </div>
 
-            <div className="rounded-xl bg-white p-6 shadow-sm">
+            <div className="rounded-xl bg-white dark:bg-slate-900 p-6 shadow-sm">
               <div className="mb-4 flex items-start gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
                   <Keyboard size={22} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-800">Input Kode Absen Guru</h3>
-                  <p className="text-sm text-gray-500">
+                  <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Input Kode Absen Guru</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
                     Jika diminta guru, Anda juga bisa memasukkan kode absen secara manual.
                   </p>
                 </div>
@@ -404,18 +404,18 @@ export default function StudentAttendancePage() {
               </div>
             </div>
 
-            <div className="rounded-xl bg-white p-6 shadow-sm">
-              <h3 className="mb-4 text-lg font-bold text-gray-800">Riwayat Absensi</h3>
+            <div className="rounded-xl bg-white dark:bg-slate-900 p-6 shadow-sm">
+              <h3 className="mb-4 text-lg font-bold text-slate-800 dark:text-slate-100">Riwayat Absensi</h3>
 
               {records.length === 0 ? (
-                <div className="py-8 text-center text-gray-500">
+                <div className="py-8 text-center text-slate-500 dark:text-slate-400">
                   <Clock size={48} className="mx-auto mb-3 opacity-50" />
                   <p>Belum ada riwayat absensi</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {records.map((record) => (
-                    <div key={record.id} className="flex items-center justify-between rounded-lg bg-gray-50 p-3">
+                    <div key={record.id} className="flex items-center justify-between rounded-lg bg-gray-50 dark:bg-slate-800 p-3">
                       <div className="flex items-center gap-3">
                         <div
                           className={`flex h-10 w-10 items-center justify-center rounded-full ${
@@ -429,14 +429,14 @@ export default function StudentAttendancePage() {
                           <CheckCircle size={20} />
                         </div>
                         <div>
-                          <p className="font-medium text-gray-800">
+                          <p className="font-medium text-slate-800 dark:text-slate-100">
                             {record.status === "present"
                               ? "Hadir"
                               : record.status === "late"
                               ? "Terlambat"
                               : "Alpha"}
                           </p>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-slate-500 dark:text-slate-400">
                             {new Date(record.recorded_at).toLocaleString("id-ID")}
                           </p>
                         </div>

@@ -1,9 +1,10 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import {
   Briefcase,
   ExternalLink,
+  Copy,
   Download,
   FileImage,
   FileText,
@@ -32,6 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { buildPortfolioPublicUrl, getPortfolioPrimaryUrl, isHtmlPortfolioFile } from "@/lib/portfolio-links";
 import type {
   Class,
   PortfolioComment,
@@ -250,6 +252,23 @@ export default function GuruPortofolioPage() {
     setIsLoading(false);
   };
 
+  const handleCopyPublicLink = async (item: PortfolioWithStudent) => {
+    if (!item.public_slug) {
+      toast("Link publik belum tersedia untuk karya ini", "error");
+      return;
+    }
+
+    try {
+      const publicUrl = buildPortfolioPublicUrl(item.public_slug);
+      if (!publicUrl) throw new Error("Public URL unavailable");
+      await navigator.clipboard.writeText(publicUrl);
+      toast("Link karya berhasil disalin", "success");
+    } catch (error) {
+      console.error("Copy public link failed:", error);
+      toast("Gagal menyalin link karya", "error");
+    }
+  };
+
   const handleToggleLike = async (item: PortfolioWithStudent) => {
     const sessionData = sessionStorage.getItem("guruSession");
     if (!sessionData) {
@@ -466,258 +485,249 @@ export default function GuruPortofolioPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary/10 text-secondary">
-              <Briefcase size={28} />
+    <div className="space-y-4">
+      <div className="mx-auto max-w-2xl lg:max-w-none">
+        <div className="rounded-2xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm sm:p-6">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-secondary/10 text-secondary shrink-0">
+              <Briefcase size={24} />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-primary">Galeri Karya Siswa</h2>
-              <p className="text-gray-500">Pantau karya publik siswa, termasuk interaksi like dan komentar.</p>
+              <h2 className="text-xl sm:text-2xl font-bold text-primary">Galeri Karya Siswa</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400 hidden sm:block">Pantau karya publik siswa, termasuk interaksi like dan komentar.</p>
             </div>
           </div>
-        </div>
 
-        <div className="mt-6 grid gap-4 md:grid-cols-[1fr_220px_180px]">
-          <div className="relative">
-            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <Input
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Cari judul karya atau nama siswa..."
-              className="pl-10"
-            />
+          <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_180px_140px]">
+            <div className="relative">
+              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Input
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Cari judul atau nama siswa..."
+                className="pl-10"
+              />
+            </div>
+            <Select value={classFilter} onValueChange={setClassFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Semua kelas" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua kelas</SelectItem>
+                {classes.map((cls) => (
+                  <SelectItem key={cls.id} value={cls.id}>
+                    {cls.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={scopeFilter} onValueChange={(value) => setScopeFilter(value as "all" | "class" | "global")}>
+              <SelectTrigger>
+                <SelectValue placeholder="Semua" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua</SelectItem>
+                <SelectItem value="class">Kelas</SelectItem>
+                <SelectItem value="global">Global</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <Select value={classFilter} onValueChange={setClassFilter}>
-            <SelectTrigger>
-              <SelectValue placeholder="Semua kelas" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Semua kelas</SelectItem>
-              {classes.map((cls) => (
-                <SelectItem key={cls.id} value={cls.id}>
-                  {cls.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={scopeFilter} onValueChange={(value) => setScopeFilter(value as "all" | "class" | "global")}>
-            <SelectTrigger>
-              <SelectValue placeholder="Semua publikasi" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Semua</SelectItem>
-              <SelectItem value="class">Kelas</SelectItem>
-              <SelectItem value="global">Global</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div className="mx-auto max-w-2xl lg:max-w-none grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
           {[1, 2, 3].map((index) => (
-            <div key={index} className="overflow-hidden rounded-2xl bg-white shadow-sm animate-pulse">
-              <div className="h-52 bg-gray-200"></div>
-              <div className="space-y-3 p-5">
-                <div className="h-5 w-2/3 rounded bg-gray-200"></div>
-                <div className="h-4 w-1/2 rounded bg-gray-200"></div>
+            <div key={index} className="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm animate-pulse">
+              <div className="flex items-center gap-3 p-4 pb-2">
+                <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-slate-700"></div>
+                <div className="space-y-2 flex-1">
+                  <div className="h-4 w-1/3 rounded bg-gray-200 dark:bg-slate-700"></div>
+                  <div className="h-3 w-1/4 rounded bg-gray-200 dark:bg-slate-700"></div>
+                </div>
+              </div>
+              <div className="h-56 bg-gray-200 dark:bg-slate-700 mx-4 rounded-xl"></div>
+              <div className="space-y-3 p-4">
+                <div className="h-5 w-2/3 rounded bg-gray-200 dark:bg-slate-700"></div>
+                <div className="h-4 w-full rounded bg-gray-200 dark:bg-slate-700"></div>
               </div>
             </div>
           ))}
         </div>
       ) : filteredItems.length === 0 ? (
-        <div className="rounded-2xl border-2 border-dashed border-gray-200 bg-white py-20 text-center">
+        <div className="mx-auto max-w-2xl lg:max-w-none rounded-2xl border-2 border-dashed border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-20 text-center">
           <FileImage size={48} className="mx-auto mb-4 text-gray-400" />
-          <h3 className="text-lg font-semibold text-gray-700">Belum Ada Upload Karya</h3>
-          <p className="mx-auto mt-2 max-w-md text-gray-500">Karya siswa akan muncul di sini saat sudah dipublikasikan.</p>
+          <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Belum Ada Upload Karya</h3>
+          <p className="mx-auto mt-2 max-w-md text-slate-500 dark:text-slate-400">Karya siswa akan muncul di sini saat sudah dipublikasikan.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div className="mx-auto max-w-2xl lg:max-w-none grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
           {filteredItems.map((item) => (
             <div
               key={item.id}
-              className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition hover:shadow-lg"
+              className="overflow-hidden rounded-2xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm transition-shadow duration-200 hover:shadow-md"
             >
-              <div className="relative h-52 overflow-hidden bg-gray-100">
+              {/* Post Header - Avatar + Name + Date + Scope badge */}
+              <div className="flex items-center gap-3 px-4 pt-4 pb-2 sm:px-5">
+                <Avatar src={item.uploader_avatar} name={item.uploader_name || item.student_nis} size="md" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-bold text-slate-800 dark:text-slate-100">{item.uploader_name || item.student_nis}</p>
+                  <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                    <span>{item.uploader_class_name || "-"}</span>
+                    <span>·</span>
+                    <span>{new Date(item.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</span>
+                  </div>
+                </div>
+                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 shrink-0">
+                  {item.visibility_scope === "global" ? <><Globe size={11} /> Global</> : <><Users size={11} /> Kelas</>}
+                </span>
+              </div>
+
+              {/* Post Body - Title + Description */}
+              <div className="px-4 pb-3 sm:px-5">
+                <h3 className="break-words text-[15px] font-bold text-slate-800 dark:text-slate-100 sm:text-base">{item.title}</h3>
+                <p className="mt-1 break-words text-sm leading-relaxed text-slate-500 dark:text-slate-400 line-clamp-3">{item.description || "Tanpa deskripsi"}</p>
+              </div>
+
+              {/* Media Preview */}
+              <div className="relative mx-4 mb-3 overflow-hidden rounded-xl bg-gray-100 dark:bg-slate-800 sm:mx-5 cursor-pointer" onClick={() => setSelectedDetailItem(item)}>
                 {getPortfolioFileKind(item.image_url) === "image" ? (
-                  <img src={item.image_url} alt={item.title} className="h-full w-full object-cover" />
+                  <img src={item.image_url} alt={item.title} className="w-full max-h-[400px] object-cover" />
                 ) : (
-                  <div className="flex h-full w-full flex-col items-center justify-center gap-2 px-4 text-center">
-                    <FileText size={44} className="text-primary" />
-                    <p className="line-clamp-2 text-sm font-semibold text-gray-700">{item.title}</p>
-                    <p className="text-xs text-gray-500">
+                  <div className="flex flex-col items-center justify-center gap-2 px-4 py-10 text-center">
+                    <FileText size={40} className="text-primary" />
+                    <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
                       {getPortfolioFileKind(item.image_url) === "html" ? "Preview HTML5 tersedia" : "File non-gambar"}
                     </p>
+                    <span className="text-xs text-primary font-medium">Klik untuk lihat detail</span>
                   </div>
                 )}
-                <div className="absolute left-3 top-3 inline-flex items-center rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white">
-                  {item.visibility_scope === "global" ? (
-                    <>
-                      <Globe size={12} className="mr-1" /> Global
-                    </>
-                  ) : (
-                    <>
-                      <Users size={12} className="mr-1" /> Kelas
-                    </>
+              </div>
+
+              {/* Action Buttons Row - Like + Comment + Links */}
+              <div className="flex items-center justify-between border-t border-gray-100 dark:border-slate-800 px-2 sm:px-3">
+                <div className="flex items-center">
+                  <button
+                    type="button"
+                    disabled={isLikeLoadingId === item.id}
+                    onClick={() => void handleToggleLike(item)}
+                    className={`flex items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium transition-colors min-h-[48px] ${
+                      item.liked_by_me
+                        ? "text-primary font-bold"
+                        : "text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+                    }`}
+                  >
+                    <ThumbsUp size={18} className={item.liked_by_me ? "fill-primary" : ""} />
+                    <span>{item.like_count > 0 ? item.like_count : "Suka"}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="flex items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors min-h-[48px]"
+                    onClick={() => document.getElementById(`comment-input-guru-${item.id}`)?.focus()}
+                  >
+                    <MessageSquare size={18} />
+                    <span>{item.comment_count > 0 ? item.comment_count : "Komentar"}</span>
+                  </button>
+                </div>
+                <div className="flex items-center gap-1">
+                  <a
+                    href={getPortfolioPrimaryUrl(item)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center rounded-lg p-2.5 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors min-h-[44px] min-w-[44px]"
+                    title={isHtmlPortfolioFile(item.image_url) && item.public_slug ? "Buka Link" : "Buka File"}
+                  >
+                    <ExternalLink size={18} />
+                  </a>
+                  {isHtmlPortfolioFile(item.image_url) && item.public_slug && (
+                    <button type="button" onClick={() => void handleCopyPublicLink(item)} className="flex items-center justify-center rounded-lg p-2.5 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors min-h-[44px] min-w-[44px]" title="Copy Link">
+                      <Copy size={18} />
+                    </button>
                   )}
+                  <button
+                    type="button"
+                    disabled={isDownloadLoadingId === item.id}
+                    onClick={() => void handleDownloadFile(item)}
+                    className="flex items-center justify-center rounded-lg p-2.5 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors min-h-[44px] min-w-[44px]"
+                    title="Unduh File"
+                  >
+                    <Download size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isDeleteLoadingId === item.id}
+                    onClick={() => void handleDeletePortfolio(item)}
+                    className="flex items-center justify-center rounded-lg p-2.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors min-h-[44px] min-w-[44px]"
+                    title="Hapus Karya"
+                  >
+                    <Trash2 size={18} />
+                  </button>
                 </div>
               </div>
 
-              <div className="space-y-4 p-5">
-                <div className="flex items-center gap-3">
-                  <Avatar src={item.uploader_avatar} name={item.uploader_name || item.student_nis} size="md" />
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-bold text-gray-800">{item.uploader_name || item.student_nis}</p>
-                    <p className="text-xs text-gray-500">{item.uploader_class_name || "-"}</p>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="break-words text-base font-bold text-primary sm:text-lg">{item.title}</h3>
-                  <p className="mt-1 break-words text-sm leading-relaxed text-gray-500">{item.description || "Tanpa deskripsi"}</p>
-                  <Button variant="outline" size="sm" className="mt-3" onClick={() => setSelectedDetailItem(item)}>
-                    Lihat Detail
-                  </Button>
-                </div>
-
-                <div className="flex items-center gap-2 border-t border-gray-100 pt-4">
-                  <Button
-                    variant={item.liked_by_me ? "default" : "outline"}
-                    size="sm"
-                    disabled={isLikeLoadingId === item.id}
-                    onClick={() => void handleToggleLike(item)}
-                  >
-                    <ThumbsUp size={14} className="mr-2" />
-                    {item.like_count}
-                  </Button>
-                  <span className="flex items-center gap-1 text-xs font-medium text-gray-500">
-                    <MessageSquare size={14} /> {item.comment_count}
-                  </span>
-                </div>
-
-                <div className="space-y-2 border-t border-gray-100 pt-4">
-                  <div className="max-h-36 space-y-2 overflow-auto pr-1">
-                    {item.comments_list.slice(0, 6).map((comment) => (
-                      <div key={comment.id} className="rounded-lg bg-gray-50 px-3 py-2">
-                        <div className="flex items-start gap-2">
-                          <Avatar src={comment.avatar_url} name={comment.commenter_name} size="sm" />
-                          <div className="min-w-0">
-                            <p className="text-xs font-semibold text-gray-700">
-                              {comment.commenter_name} · {comment.commenter_class_name || (comment.commenter_role === "guru" ? "Guru" : "-")}
-                            </p>
-                            {editingCommentId === comment.id ? (
-                              <div className="mt-1 space-y-2">
-                                <Input
-                                  value={editingCommentText}
-                                  onChange={(event) => setEditingCommentText(event.target.value)}
-                                  placeholder="Ubah komentar..."
-                                />
-                                <div className="flex items-center gap-2">
-                                  <Button
-                                    size="sm"
-                                    disabled={isCommentActionLoadingId === comment.id}
-                                    onClick={() => void handleUpdateComment(comment)}
-                                  >
-                                    <Check size={13} className="mr-1" />
-                                    Simpan
-                                  </Button>
-                                  <Button variant="outline" size="sm" onClick={cancelEditComment}>
-                                    <X size={13} className="mr-1" />
-                                    Batal
-                                  </Button>
-                                </div>
+              {/* Comments Section */}
+              {item.comments_list.length > 0 && (
+                <div className="border-t border-gray-100 dark:border-slate-800 px-4 py-3 sm:px-5 space-y-3">
+                  {item.comments_list.slice(0, 4).map((comment) => (
+                    <div key={comment.id} className="flex items-start gap-2.5">
+                      <Avatar src={comment.avatar_url} name={comment.commenter_name} size="sm" />
+                      <div className="min-w-0 flex-1">
+                        <div className="rounded-2xl bg-gray-50 dark:bg-slate-800 px-3.5 py-2.5">
+                          <p className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                            {comment.commenter_name}
+                            <span className="ml-1.5 font-normal text-slate-400">{comment.commenter_class_name || (comment.commenter_role === "guru" ? "Guru" : "")}</span>
+                          </p>
+                          {editingCommentId === comment.id ? (
+                            <div className="mt-1.5 space-y-2">
+                              <Input value={editingCommentText} onChange={(e) => setEditingCommentText(e.target.value)} placeholder="Ubah komentar..." className="text-sm" />
+                              <div className="flex items-center gap-2">
+                                <button type="button" disabled={isCommentActionLoadingId === comment.id} onClick={() => void handleUpdateComment(comment)} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary/90 min-h-[36px]">Simpan</button>
+                                <button type="button" onClick={cancelEditComment} className="rounded-lg px-3 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 min-h-[36px]">Batal</button>
                               </div>
-                            ) : (
-                              <p className="break-words text-sm text-gray-600">{comment.comment_text}</p>
-                            )}
-                            {comment.commenter_role === "guru" && comment.commenter_kode === teacherKode && (
-                              <div className="mt-2 flex items-center gap-2">
-                                <Button variant="outline" size="sm" onClick={() => startEditComment(comment)}>
-                                  <Pencil size={12} className="mr-1" />
-                                  Edit
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  disabled={isCommentActionLoadingId === comment.id}
-                                  onClick={() => void handleDeleteComment(comment)}
-                                >
-                                  <Trash2 size={12} className="mr-1" />
-                                  Hapus
-                                </Button>
-                              </div>
-                            )}
-                          </div>
+                            </div>
+                          ) : (
+                            <p className="break-words text-sm text-slate-600 dark:text-slate-300 mt-0.5">{comment.comment_text}</p>
+                          )}
                         </div>
+                        {comment.commenter_role === "guru" && comment.commenter_kode === teacherKode && editingCommentId !== comment.id && (
+                          <div className="mt-1 flex items-center gap-3 pl-3">
+                            <button type="button" onClick={() => startEditComment(comment)} className="text-xs font-medium text-slate-400 hover:text-primary transition-colors min-h-[32px]">Edit</button>
+                            <button type="button" disabled={isCommentActionLoadingId === comment.id} onClick={() => void handleDeleteComment(comment)} className="text-xs font-medium text-slate-400 hover:text-red-500 transition-colors min-h-[32px]">Hapus</button>
+                          </div>
+                        )}
                       </div>
-                    ))}
-                    {item.comments_list.length === 0 && <p className="text-xs text-gray-400">Belum ada komentar.</p>}
-                  </div>
+                    </div>
+                  ))}
+                  {item.comments_list.length > 4 && (
+                    <button type="button" onClick={() => setSelectedDetailItem(item)} className="text-xs font-medium text-primary hover:underline pl-10 min-h-[32px]">
+                      Lihat semua {item.comments_list.length} komentar
+                    </button>
+                  )}
+                </div>
+              )}
 
-                  <div className="flex items-center gap-2">
-                    <Input
-                      value={commentDrafts[item.id] || ""}
-                      onChange={(event) =>
-                        setCommentDrafts((prev) => ({
-                          ...prev,
-                          [item.id]: event.target.value,
-                        }))
-                      }
-                      placeholder="Tulis komentar..."
-                    />
-                    <Button
-                      size="icon"
+              {/* Comment Input */}
+              <div className="flex items-center gap-2 border-t border-gray-100 dark:border-slate-800 px-4 py-3 sm:px-5">
+                <Avatar name="G" size="sm" />
+                <div className="relative flex-1">
+                  <input
+                    id={`comment-input-guru-${item.id}`}
+                    value={commentDrafts[item.id] || ""}
+                    onChange={(e) => setCommentDrafts((prev) => ({ ...prev, [item.id]: e.target.value }))}
+                    onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void handleAddComment(item.id); } }}
+                    placeholder="Tambahkan komentar..."
+                    className="w-full rounded-full border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-2.5 pr-12 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all min-h-[44px]"
+                  />
+                  {(commentDrafts[item.id] || "").trim() && (
+                    <button
+                      type="button"
                       disabled={isCommentLoadingId === item.id}
                       onClick={() => void handleAddComment(item.id)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center rounded-full bg-primary p-1.5 text-white hover:bg-primary/90 transition-colors min-h-[32px] min-w-[32px]"
                     >
-                      <Send size={15} />
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between border-t border-gray-100 pt-4">
-                  <div className="text-xs text-gray-400">
-                    {new Date(item.created_at).toLocaleDateString("id-ID", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={isDownloadLoadingId === item.id}
-                      onClick={() => void handleDownloadFile(item)}
-                    >
-                      <Download size={14} className="mr-1" />
-                      {isDownloadLoadingId === item.id ? "Mengunduh..." : "Unduh"}
-                    </Button>
-                    <a
-                      href={item.image_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center rounded-lg bg-secondary/10 px-3 py-2 text-xs font-semibold text-secondary transition hover:bg-secondary hover:text-white"
-                    >
-                      <ExternalLink size={14} className="mr-2" />
-                      Buka File
-                    </a>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={isDeleteLoadingId === item.id}
-                      onClick={() => void handleDeletePortfolio(item)}
-                      className="text-danger hover:text-danger"
-                    >
-                      <Trash2 size={14} className="mr-1" />
-                      Hapus
-                    </Button>
-                  </div>
+                      <Send size={14} />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -732,27 +742,33 @@ export default function GuruPortofolioPage() {
           </DialogHeader>
           <div className="space-y-4">
             {selectedDetailItem && (
-              <div className="overflow-hidden rounded-xl border border-gray-100 bg-gray-50">
+              <div className="overflow-hidden rounded-xl border border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800">
                 <PortfolioFilePreview url={selectedDetailItem.image_url} title={selectedDetailItem.title} />
               </div>
             )}
             <div>
-              <p className="text-sm font-semibold text-gray-700">Deskripsi</p>
-              <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-gray-600">
+              <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Deskripsi</p>
+              <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-600 dark:text-slate-300">
                 {selectedDetailItem?.description || "Tanpa deskripsi"}
               </p>
             </div>
-            <a
-              href={selectedDetailItem?.image_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90"
-            >
-              <ExternalLink size={14} className="mr-2" />
-              Buka File
-            </a>
-            {selectedDetailItem && (
-              <Button
+              <a
+                href={selectedDetailItem ? getPortfolioPrimaryUrl(selectedDetailItem) : "#"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90"
+              >
+                <ExternalLink size={14} className="mr-2" />
+                {selectedDetailItem && isHtmlPortfolioFile(selectedDetailItem.image_url) && selectedDetailItem.public_slug ? "Buka Link Publik" : "Buka File"}
+              </a>
+              {selectedDetailItem && isHtmlPortfolioFile(selectedDetailItem.image_url) && selectedDetailItem.public_slug ? (
+                <Button type="button" variant="outline" onClick={() => void handleCopyPublicLink(selectedDetailItem)}>
+                  <Copy size={14} className="mr-2" />
+                  Copy Link
+                </Button>
+              ) : null}
+              {selectedDetailItem && (
+                <Button
                 type="button"
                 variant="outline"
                 onClick={() => void handleDownloadFile(selectedDetailItem)}

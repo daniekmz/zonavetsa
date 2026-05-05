@@ -207,7 +207,7 @@ export default function AdminSiswaPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-primary">Data Siswa</h2>
-          <p className="text-gray-500">Kelola data siswa</p>
+          <p className="text-slate-500 dark:text-slate-400">Kelola data siswa</p>
         </div>
         <div className="flex items-center gap-2">
           <Button onClick={() => setIsImportModalOpen(true)} variant="outline">
@@ -226,7 +226,7 @@ export default function AdminSiswaPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl p-4 shadow-sm">
+      <div className="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-sm">
         <div className="grid md:grid-cols-2 gap-4">
           <div className="relative">
             <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -254,47 +254,47 @@ export default function AdminSiswaPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm overflow-hidden">
         {isLoading ? (
           <div className="p-12 text-center">Memuat...</div>
         ) : filteredStudents.length === 0 ? (
-          <div className="p-12 text-center text-gray-500">Tidak ada data siswa</div>
+          <div className="p-12 text-center text-slate-500 dark:text-slate-400">Tidak ada data siswa</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50 dark:bg-slate-800">
                 <tr>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Foto</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">NIS</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Nama</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Kelas</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Email</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Telepon</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Aksi</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">Foto</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">NIS</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">Nama</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">Kelas</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">Email</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">Telepon</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {filteredStudents.map((student) => (
-                  <tr key={student.nis} className="hover:bg-gray-50">
+                  <tr key={student.nis} className="hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-800">
                     <td className="px-4 py-3">
                       <Avatar src={student.avatar_url} name={student.name} size="md" />
                     </td>
                     <td className="px-4 py-3 text-sm font-medium text-primary">{student.nis}</td>
-                    <td className="px-4 py-3 text-sm text-gray-800">{student.name}</td>
-                    <td className="px-4 py-3 text-sm text-gray-500">
+                    <td className="px-4 py-3 text-sm text-slate-800 dark:text-slate-100">{student.name}</td>
+                    <td className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
                       {classes.find((c) => c.id === student.class_id)?.name || "-"}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-500">{student.email || "-"}</td>
-                    <td className="px-4 py-3 text-sm text-gray-500">{student.phone || "-"}</td>
+                    <td className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">{student.email || "-"}</td>
+                    <td className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">{student.phone || "-"}</td>
                     <td className="px-4 py-3">
                       <div className="flex gap-1">
-                        <button onClick={() => openModal(student)} className="p-2 hover:bg-gray-100 rounded-lg text-info">
+                        <button onClick={() => openModal(student)} className="p-2 hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-slate-800 rounded-lg text-info">
                           <Edit2 size={16} />
                         </button>
-                        <button onClick={() => handleResetPassword(student)} className="p-2 hover:bg-gray-100 rounded-lg text-warning" title="Reset Password">
+                        <button onClick={() => handleResetPassword(student)} className="p-2 hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-slate-800 rounded-lg text-warning" title="Reset Password">
                           <Key size={16} />
                         </button>
-                        <button onClick={() => handleDelete(student)} className="p-2 hover:bg-gray-100 rounded-lg text-danger">
+                        <button onClick={() => handleDelete(student)} className="p-2 hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-slate-800 rounded-lg text-danger">
                           <Trash2 size={16} />
                         </button>
                       </div>

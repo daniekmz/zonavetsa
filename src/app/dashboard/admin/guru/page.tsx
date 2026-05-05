@@ -189,7 +189,7 @@ export default function AdminGuruPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-primary">Data Guru</h2>
-          <p className="text-gray-500">Kelola data guru</p>
+          <p className="text-slate-500 dark:text-slate-400">Kelola data guru</p>
         </div>
         <div className="flex items-center gap-2">
           <Button onClick={() => setIsImportModalOpen(true)} variant="outline">
@@ -208,7 +208,7 @@ export default function AdminGuruPage() {
       </div>
 
       {/* Search */}
-      <div className="bg-white rounded-xl p-4 shadow-sm">
+      <div className="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-sm">
         <div className="relative">
           <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <Input
@@ -221,77 +221,77 @@ export default function AdminGuruPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm overflow-hidden">
         {isLoading ? (
           <div className="p-12 text-center">Memuat...</div>
         ) : filteredTeachers.length === 0 ? (
-          <div className="p-12 text-center text-gray-500">Tidak ada data guru</div>
+          <div className="p-12 text-center text-slate-500 dark:text-slate-400">Tidak ada data guru</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50 dark:bg-slate-800">
                 <tr>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">
                     Foto
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">
                     Kode
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">
                     Nama
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">
                     NIP
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">
                     Email
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">
                     Telepon
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">
                     Mapel
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">
                     Aksi
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {filteredTeachers.map((teacher) => (
-                  <tr key={teacher.kode_guru} className="hover:bg-gray-50">
+                  <tr key={teacher.kode_guru} className="hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-800">
                     <td className="px-4 py-3">
                       <Avatar src={teacher.avatar_url} name={teacher.name} size="md" />
                     </td>
                     <td className="px-4 py-3 text-sm font-medium text-primary">
                       {teacher.kode_guru}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-800">
+                    <td className="px-4 py-3 text-sm text-slate-800 dark:text-slate-100">
                       {teacher.name}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-500">
+                    <td className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
                       {teacher.nip || "-"}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-500">
+                    <td className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
                       {teacher.email || "-"}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-500">
+                    <td className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
                       {teacher.phone || "-"}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-500">
+                    <td className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
                       {teacher.subject || "-"}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-1">
                         <button
                           onClick={() => openModal(teacher)}
-                          className="p-2 hover:bg-gray-100 rounded-lg text-info"
+                          className="p-2 hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-slate-800 rounded-lg text-info"
                         >
                           <Edit2 size={16} />
                         </button>
                         <button
                           onClick={() => handleDelete(teacher)}
-                          className="p-2 hover:bg-gray-100 rounded-lg text-danger"
+                          className="p-2 hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-slate-800 rounded-lg text-danger"
                         >
                           <Trash2 size={16} />
                         </button>

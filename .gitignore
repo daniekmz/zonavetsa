@@ -36,6 +36,10 @@ next-env.d.ts
 
 # Supabase local development
 supabase/
+!supabase/
+supabase/**
+!supabase/migrations/
+!supabase/migrations/*.sql
 .branches/
 
 # Test / coverage
@@ -92,3 +96,7 @@ temp/
 
 # Package artifacts
 *.tgz
+
+# AI Tooling
+.agents/
+.gemini/

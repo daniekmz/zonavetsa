@@ -71,7 +71,7 @@ export function Toaster() {
           <span className="text-sm font-semibold">{t.message}</span>
           <button
             onClick={() => removeToast(t.id)}
-            className="ml-2 rounded-full p-1 transition-colors hover:bg-slate-200/70 dark:hover:bg-slate-700/70"
+            className="ml-2 rounded-full p-1 transition-colors hover:bg-slate-200 dark:bg-slate-700/70 dark:hover:bg-slate-700/70"
           >
             <X className="h-4 w-4" />
           </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import {
   FolderOpen,
   FileText,
@@ -9,21 +9,14 @@ import {
   Grid,
   List,
   ChevronRight,
-  Home,
   Search,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { FileItem, Student } from "@/types";
+import type { FileItem } from "@/types";
 import { formatFileSize } from "@/lib/utils";
 
-interface StudentSession {
-  student: Student;
-  selected: boolean;
-}
-
-export default function StudentDashboardPage() {
+export default function SiswaFileManagerPage() {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -31,78 +24,63 @@ export default function StudentDashboardPage() {
   const [breadcrumbs, setBreadcrumbs] = useState<{ id: string | null; name: string }[]>([
     { id: null, name: "Beranda" },
   ]);
-  const [studentClassId, setStudentClassId] = useState<string | null>(null);
-  const [className, setClassName] = useState<string>("");
-  const [selectedTeacherKode, setSelectedTeacherKode] = useState<string>("");
-  const [selectedTeacherName, setSelectedTeacherName] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [className, setClassName] = useState("");
+  const [selectedTeacherName, setSelectedTeacherName] = useState("");
 
   useEffect(() => {
-    loadStudentInfo();
-  }, []);
+    // Pada load pertama / path berubah, panggil data file
+    loadFiles(currentPath.length > 0 ? currentPath[currentPath.length - 1] : null);
+  }, [currentPath]);
 
-  useEffect(() => {
-    if (studentClassId) {
-      loadFiles();
-    }
-  }, [studentClassId, currentPath, selectedTeacherKode]);
-
-  const loadStudentInfo = async () => {
-    const supabase = createClient();
-    const sessionData = sessionStorage.getItem("studentSession");
-    
-    if (!sessionData) return;
-    
-    const session: StudentSession = JSON.parse(sessionData);
-    const { student } = session;
-    const effectiveClassId = student.last_class_id || student.class_id;
-    
-    if (student.last_teacher_kode) {
-      setSelectedTeacherKode(student.last_teacher_kode);
-    }
-
-    if (effectiveClassId) {
-      const [classRes, teacherRes] = await Promise.all([
-        supabase
-          .from("classes")
-          .select("id, name")
-          .eq("id", effectiveClassId)
-          .single(),
-        student.last_teacher_kode
-          ? supabase
-              .from("teachers")
-              .select("name")
-              .eq("kode_guru", student.last_teacher_kode)
-              .single()
-          : Promise.resolve({ data: null }),
-      ]);
-
-      if (classRes.data) {
-        setStudentClassId(classRes.data.id);
-        setClassName(classRes.data.name);
-      }
-
-      if (teacherRes.data?.name) {
-        setSelectedTeacherName(teacherRes.data.name);
-      }
-    }
-  };
-
-  const loadFiles = async () => {
-    if (!studentClassId) return;
-    
+  const loadFiles = async (parentId: string | null = null) => {
     setIsLoading(true);
     const supabase = createClient();
+    const sessionData = sessionStorage.getItem("studentSession");
+    if (!sessionData) {
+      setIsLoading(false);
+      return;
+    }
+
+    const { student, selectedTeacherKode } = JSON.parse(sessionData);
+
+    let classId = student.last_class_id || student.class_id;
+
+    if (classId) {
+      const { data: classData } = await supabase
+        .from("classes")
+        .select("name")
+        .eq("id", classId)
+        .single();
+      if (classData) setClassName(classData.name);
+    }
+
+    if (selectedTeacherKode) {
+      const { data: teacherData } = await supabase
+        .from("teachers")
+        .select("name, subject")
+        .eq("kode_guru", selectedTeacherKode)
+        .single();
+      if (teacherData) {
+        setSelectedTeacherName(teacherData.name);
+      }
+    }
+
+    if (!classId) {
+      setFiles([]);
+      setIsLoading(false);
+      return;
+    }
 
     let query = supabase
       .from("files")
       .select("*")
-      .eq("class_id", studentClassId)
+      .eq("class_id", classId)
       .order("type", { ascending: false })
-      .order("name");
+      .order("name", { ascending: true });
 
-    if (currentPath.length > 0) {
-      query = query.eq("parent_id", currentPath[currentPath.length - 1]);
+    if (parentId) {
+      query = query.eq("parent_id", parentId);
     } else {
       query = query.is("parent_id", null);
     }
@@ -110,8 +88,8 @@ export default function StudentDashboardPage() {
     const { data } = await query;
 
     if (data) {
-      const filteredFiles = (data as FileItem[]).filter((file) => {
-        if (file.creator_role !== "guru") {
+      const filteredFiles = data.filter((file: FileItem) => {
+        if (file.creator_role === "siswa") {
           return true;
         }
 
@@ -149,11 +127,11 @@ export default function StudentDashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* ━━ Header ━━ */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-primary">File Manager</h2>
-          <p className="text-gray-500">
+          <h2 className="text-2xl font-bold text-navy dark:text-white">File Manager</h2>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Materi ditampilkan sesuai kelas {className || "aktif"}
             {selectedTeacherName ? ` dan guru ${selectedTeacherName}` : ""}
           </p>
@@ -162,44 +140,47 @@ export default function StudentDashboardPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setViewMode("grid")}
-            className={`p-2 rounded-lg ${
+            className={`p-2 rounded-lg transition-colors ${
               viewMode === "grid"
-                ? "bg-primary text-white"
-                : "bg-gray-200 text-gray-600"
+                ? "bg-navy text-white shadow-sm"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700"
             }`}
+             aria-label="Grid view"
           >
             <Grid size={18} />
           </button>
           <button
             onClick={() => setViewMode("list")}
-            className={`p-2 rounded-lg ${
+             className={`p-2 rounded-lg transition-colors ${
               viewMode === "list"
-                ? "bg-primary text-white"
-                : "bg-gray-200 text-gray-600"
+                ? "bg-navy text-white shadow-sm"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700"
             }`}
+            aria-label="List view"
           >
             <List size={18} />
           </button>
           <button
-            onClick={loadFiles}
-            className="p-2 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300"
+            onClick={() => loadFiles(currentPath.length > 0 ? currentPath[currentPath.length - 1] : null)}
+            className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700"
+            aria-label="Refresh files"
           >
             <RefreshCw size={18} />
           </button>
         </div>
       </div>
 
-      {/* Breadcrumb */}
+      {/* ━━ Breadcrumb ━━ */}
       <div className="flex items-center gap-2 text-sm flex-wrap">
         {breadcrumbs.map((crumb, index) => (
-          <div key={index} className="flex items-center gap-2">
-            {index > 0 && <ChevronRight size={14} className="text-gray-400" />}
+          <div key={index} className="flex items-center gap-2 text-sm font-medium">
+            {index > 0 && <ChevronRight size={14} className="text-slate-400" />}
             <button
               onClick={() => handleBreadcrumbClick(index)}
-              className={`hover:text-primary ${
+              className={`transition-colors hover:text-navy dark:hover:text-white ${
                 index === breadcrumbs.length - 1
-                  ? "text-primary font-medium"
-                  : "text-gray-500"
+                  ? "text-navy dark:text-white"
+                  : "text-slate-500 dark:text-slate-400"
               }`}
             >
               {crumb.name}
@@ -208,38 +189,40 @@ export default function StudentDashboardPage() {
         ))}
       </div>
 
-      {/* Search */}
+      {/* ━━ Search ━━ */}
       <div className="relative max-w-md">
-        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
         <Input
-          placeholder="Cari file..."
+          placeholder="Cari materi..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
+          className="pl-10 border-slate-200 shadow-sm dark:border-slate-800 dark:bg-card"
         />
       </div>
 
-      {/* File Grid/List */}
+      {/* ━━ File Grid/List ━━ */}
       {isLoading ? (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {[...Array(8)].map((_, i) => (
             <div
               key={i}
-              className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-xl p-4 animate-pulse"
+              className="bg-white dark:bg-card border border-slate-200 dark:border-slate-800 rounded-xl p-4 animate-pulse shadow-sm"
             >
-              <div className="w-12 h-12 bg-gray-200 dark:bg-slate-700 rounded-lg mx-auto mb-3" />
-              <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-3/4 mx-auto" />
+              <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-lg mx-auto mb-3" />
+              <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-3/4 mx-auto" />
             </div>
           ))}
         </div>
       ) : filteredFiles.length === 0 ? (
-        <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-xl p-12 text-center shadow-sm">
-          <FolderOpen size={64} className="mx-auto text-gray-300 dark:text-slate-500 mb-4" />
-          <h3 className="text-lg font-semibold text-gray-700 dark:text-slate-100 mb-2">
+        <div className="bg-white dark:bg-card border border-slate-200 dark:border-slate-800 rounded-3xl p-12 text-center shadow-card">
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-slate-50 dark:bg-slate-900 mb-4">
+             <FolderOpen size={40} className="text-slate-300 dark:text-slate-500 dark:text-slate-400" />
+          </div>
+          <h3 className="text-lg font-bold text-navy dark:text-white mb-2">
             {searchTerm ? "Tidak Ditemukan" : "Belum Ada File"}
           </h3>
-          <p className="text-gray-500 dark:text-slate-400">
-            {searchTerm ? `Tidak ada file bernama "${searchTerm}"` : "Materi dari guru akan muncul di sini"}
+          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+            {searchTerm ? `Tidak ada file materi bernama "${searchTerm}"` : "Materi dari guru akan secara otomatis muncul di sini."}
           </p>
         </div>
       ) : viewMode === "grid" ? (
@@ -248,19 +231,19 @@ export default function StudentDashboardPage() {
             <div
               key={file.id}
               onClick={() => handleFileClick(file)}
-              className="bg-white dark:bg-slate-900/80 rounded-xl p-4 shadow-sm hover:shadow-md cursor-pointer transition-all hover:-translate-y-1 border-2 border-transparent hover:border-primary dark:hover:border-cyan-400/40"
+              className="bg-white dark:bg-card rounded-2xl p-4 shadow-card hover:shadow-panel cursor-pointer transition-all hover:-translate-y-1 border border-slate-200 hover:border-teal dark:border-slate-800 dark:hover:border-teal-500 group"
             >
-              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-3">
-                <FileText size={24} className="text-primary" />
+              <div className="w-12 h-12 bg-teal/10 rounded-xl flex items-center justify-center mx-auto mb-3 text-teal">
+                <FileText size={24} />
               </div>
-              <p className="text-sm font-medium text-gray-800 dark:text-slate-100 text-center truncate">
+              <p className="text-sm font-semibold text-navy dark:text-white text-center truncate px-2">
                 {file.name}
               </p>
-              <p className="text-xs text-gray-500 dark:text-slate-400 text-center mt-1">
+              <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-1">
                 {file.size ? formatFileSize(file.size) : ""}
               </p>
               {file.creator_role === "guru" && (
-                <span className="inline-block mt-2 px-2 py-0.5 bg-info/10 text-info text-xs rounded">
+                <span className="flex w-fit mx-auto mt-3 px-2.5 py-1 bg-navy/5 text-navy dark:bg-teal/10 dark:text-teal font-bold text-[10px] rounded-full uppercase tracking-wider">
                   Materi Guru
                 </span>
               )}
@@ -268,48 +251,50 @@ export default function StudentDashboardPage() {
           ))}
         </div>
       ) : (
-        <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-card border border-slate-200 dark:border-slate-800 rounded-2xl shadow-card overflow-hidden">
           <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-slate-800/80">
+            <thead className="bg-slate-50 dark:bg-slate-900/50">
               <tr>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-slate-300">
+                <th className="px-5 py-4 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   Nama File
                 </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-slate-300">
+                <th className="px-5 py-4 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   Ukuran
                 </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-slate-300">
+                <th className="px-5 py-4 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   Tanggal
                 </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-slate-300">
+                <th className="px-5 py-4 text-right text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   Aksi
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {files.map((file) => (
                 <tr
                   key={file.id}
                   onClick={() => handleFileClick(file)}
-                  className="hover:bg-gray-50 dark:hover:bg-slate-800/70 cursor-pointer"
+                  className="hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors"
                 >
-                  <td className="px-4 py-3">
+                  <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
-                      <FileText size={20} className="text-primary" />
-                      <span className="font-medium text-gray-800 dark:text-slate-100">
+                      <div className="flex p-2 bg-teal/10 text-teal rounded-lg">
+                        <FileText size={18} />
+                      </div>
+                      <span className="font-semibold text-navy dark:text-white">
                         {file.name}
                       </span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-500 dark:text-slate-400">
+                  <td className="px-5 py-4 text-sm font-medium text-slate-500 dark:text-slate-400">
                     {file.size ? formatFileSize(file.size) : "-"}
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-500 dark:text-slate-400">
+                  <td className="px-5 py-4 text-sm font-medium text-slate-500 dark:text-slate-400">
                     {new Date(file.created_at).toLocaleDateString("id-ID")}
                   </td>
-                  <td className="px-4 py-3">
-                    <button className="p-2 hover:bg-gray-200 dark:hover:bg-slate-700 rounded-lg">
-                      <Download size={16} />
+                  <td className="px-5 py-4 text-right">
+                    <button className="p-2 text-slate-400 hover:text-navy hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-800 dark:hover:text-white rounded-lg transition-colors">
+                      <Download size={18} />
                     </button>
                   </td>
                 </tr>

@@ -158,7 +158,7 @@ export default function AdminUjianPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-primary">Data Ujian</h2>
-          <p className="text-gray-500">Kelola data ujian sekolah</p>
+          <p className="text-slate-500 dark:text-slate-400">Kelola data ujian sekolah</p>
         </div>
         <Button onClick={() => openModal()} className="bg-success hover:bg-success/90">
           <Plus size={18} />
@@ -191,36 +191,36 @@ export default function AdminUjianPage() {
 
       {/* Exams Table */}
       {isLoading ? (
-        <div className="text-center py-12 text-gray-500">Memuat...</div>
+        <div className="text-center py-12 text-slate-500 dark:text-slate-400">Memuat...</div>
       ) : filteredExams.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
+        <div className="text-center py-12 text-slate-500 dark:text-slate-400">
           <ClipboardList size={48} className="mx-auto mb-3 opacity-50" />
           <p>Tidak ada ujian</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50 dark:bg-slate-800">
                 <tr>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Judul</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Kelas</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Durasi</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Status</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Aksi</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">Judul</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">Kelas</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">Durasi</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">Status</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {filteredExams.map((exam) => (
-                  <tr key={exam.id} className="hover:bg-gray-50">
+                  <tr key={exam.id} className="hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-800">
                     <td className="px-4 py-3">
-                      <p className="font-medium text-gray-800">{exam.title}</p>
-                      <p className="text-xs text-gray-500">{exam.description || "-"}</p>
+                      <p className="font-medium text-slate-800 dark:text-slate-100">{exam.title}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{exam.description || "-"}</p>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
+                    <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
                       {classes.find((c) => c.id === exam.class_id)?.name || "-"}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
+                    <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
                       {exam.duration_minutes} menit
                     </td>
                     <td className="px-4 py-3">
@@ -228,7 +228,7 @@ export default function AdminUjianPage() {
                         className={`px-2 py-1 text-xs rounded-full ${
                           exam.status === "published"
                             ? "bg-green-100 text-green-700"
-                            : "bg-gray-100 text-gray-700"
+                            : "bg-gray-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200"
                         }`}
                       >
                         {exam.status === "published" ? "Published" : "Draft"}
@@ -238,20 +238,20 @@ export default function AdminUjianPage() {
                       <div className="flex gap-1">
                         <button
                           onClick={() => handleToggleStatus(exam)}
-                          className="p-2 hover:bg-gray-100 rounded-lg text-gray-600"
+                          className="p-2 hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-slate-800 rounded-lg text-slate-600 dark:text-slate-300"
                           title={exam.status === "published" ? "Unpublish" : "Publish"}
                         >
                           {exam.status === "published" ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
                         <button
                           onClick={() => openModal(exam)}
-                          className="p-2 hover:bg-gray-100 rounded-lg text-info"
+                          className="p-2 hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-slate-800 rounded-lg text-info"
                         >
                           <Edit2 size={16} />
                         </button>
                         <button
                           onClick={() => handleDelete(exam)}
-                          className="p-2 hover:bg-gray-100 rounded-lg text-danger"
+                          className="p-2 hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-slate-800 rounded-lg text-danger"
                         >
                           <Trash2 size={16} />
                         </button>

@@ -208,6 +208,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const supabase = createClient();
 
     try {
+      // 1. Coba dari Supabase Auth
       const {
         data: { session },
       } = await supabase.auth.getSession();
@@ -229,7 +230,57 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               avatar_url: profile.avatar_url,
               created_at: profile.created_at,
             },
-            role: profile.role,
+            role: profile.role as UserRole,
+          });
+          set({ isLoading: false });
+          return;
+        }
+      }
+
+      // 2. Coba dari Session Storage (Custom Auth)
+      if (typeof window !== "undefined") {
+        const studentData = sessionStorage.getItem("studentSession");
+        const guruData = sessionStorage.getItem("guruSession");
+        const adminData = sessionStorage.getItem("adminSession");
+
+        if (studentData) {
+          const { student } = JSON.parse(studentData);
+          set({
+            user: {
+              id: student.id,
+              email: student.email || "",
+              role: "siswa",
+              name: student.name,
+              avatar_url: student.avatar_url,
+              created_at: student.created_at,
+            },
+            role: "siswa",
+          });
+        } else if (guruData) {
+          const teacher = JSON.parse(guruData);
+          set({
+            user: {
+              id: teacher.id,
+              email: teacher.email || "",
+              role: "guru",
+              name: teacher.name,
+              avatar_url: teacher.avatar_url,
+              created_at: teacher.created_at,
+            },
+            role: "guru",
+          });
+        } else if (adminData) {
+          const admin = JSON.parse(adminData);
+          set({
+            user: {
+              id: admin.id,
+              email: admin.email || "",
+              role: "admin",
+              name: admin.name,
+              avatar_url: admin.avatar_url,
+              created_at: admin.created_at,
+            },
+            role: "admin",
           });
         }
       }

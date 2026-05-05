@@ -227,7 +227,7 @@ export default function StudentProfilePage() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Memuat...</p>
+          <p className="text-slate-600 dark:text-slate-300">Memuat...</p>
         </div>
       </div>
     );
@@ -238,7 +238,7 @@ export default function StudentProfilePage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-primary">Profil Saya</h2>
-          <p className="text-gray-500">Kelola informasi profil Anda</p>
+          <p className="text-slate-500 dark:text-slate-400">Kelola informasi profil Anda</p>
         </div>
       </div>
 
@@ -258,8 +258,8 @@ export default function StudentProfilePage() {
                 />
               </label>
             </div>
-            <h3 className="font-bold text-lg text-gray-800">{student.name}</h3>
-            <p className="text-gray-500 text-sm">Siswa</p>
+            <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">{student.name}</h3>
+            <p className="text-slate-500 dark:text-slate-400 text-sm">Siswa</p>
             <p className="text-xs text-gray-400 mt-2">
               * Foto akan dikompres otomatis maks 1MB
             </p>
@@ -268,8 +268,8 @@ export default function StudentProfilePage() {
 
         {/* Profile Form */}
         <div className="md:col-span-2">
-          <div className="bg-white rounded-xl p-6 shadow-sm dark:bg-slate-900/80 dark:border dark:border-slate-800">
-            <h3 className="font-semibold text-gray-800 mb-4">
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-6 shadow-sm dark:bg-slate-900/80 dark:border dark:border-slate-800">
+            <h3 className="font-semibold text-slate-800 dark:text-slate-100 mb-4">
               Informasi Pribadi
             </h3>
 
@@ -304,7 +304,7 @@ export default function StudentProfilePage() {
                       id="nis"
                       value={student.nis || ""}
                       disabled
-                      className="pl-10 bg-gray-50"
+                      className="pl-10 bg-gray-50 dark:bg-slate-800"
                     />
                   </div>
                 </div>
@@ -360,7 +360,7 @@ export default function StudentProfilePage() {
                     id="class"
                     value={student.last_class_id || ""}
                     disabled
-                    className="pl-10 bg-gray-50"
+                    className="pl-10 bg-gray-50 dark:bg-slate-800"
                   />
                 </div>
               </div>
@@ -380,7 +380,7 @@ export default function StudentProfilePage() {
             </div>
           </div>
 
-          <div className="mt-6 bg-white rounded-xl p-6 shadow-sm dark:bg-slate-900/80 dark:border dark:border-slate-800">
+          <div className="mt-6 bg-white dark:bg-slate-900 rounded-xl p-6 shadow-sm dark:bg-slate-900/80 dark:border dark:border-slate-800">
             <div className="flex items-center gap-3 mb-4">
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-50 text-primary dark:bg-slate-800 dark:text-sky-300">
                 <KeyRound size={18} />
@@ -409,7 +409,7 @@ export default function StudentProfilePage() {
                   <button
                     type="button"
                     onClick={() => setShowPasswords({ ...showPasswords, current: !showPasswords.current })}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-primary dark:hover:bg-slate-800"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 dark:bg-slate-800 hover:text-primary dark:hover:bg-slate-800"
                   >
                     {showPasswords.current ? <EyeOff size={17} /> : <Eye size={17} />}
                   </button>
@@ -432,7 +432,7 @@ export default function StudentProfilePage() {
                     <button
                       type="button"
                       onClick={() => setShowPasswords({ ...showPasswords, next: !showPasswords.next })}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-primary dark:hover:bg-slate-800"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 dark:bg-slate-800 hover:text-primary dark:hover:bg-slate-800"
                     >
                       {showPasswords.next ? <EyeOff size={17} /> : <Eye size={17} />}
                     </button>
@@ -454,7 +454,7 @@ export default function StudentProfilePage() {
                     <button
                       type="button"
                       onClick={() => setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-primary dark:hover:bg-slate-800"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 dark:bg-slate-800 hover:text-primary dark:hover:bg-slate-800"
                     >
                       {showPasswords.confirm ? <EyeOff size={17} /> : <Eye size={17} />}
                     </button>

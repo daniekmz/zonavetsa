@@ -1,15 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { Poppins, Space_Grotesk } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toast";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://zonavetsa.rnet.lt";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://zonavetsanext.rnet.lt";
 const SITE_NAME = "ZonaVetsa";
 const SITE_DESCRIPTION =
-  "Portal digital SMK Veteran 1 Sukoharjo untuk akses materi, tugas, ujian, absensi QR, dan galeri karya siswa.";
-const OG_IMAGE_PATH = "/opengraph-image";
-const TWITTER_IMAGE_PATH = "/twitter-image";
-const GOOGLE_SITE_VERIFICATION = "OJqjazQIZh4_AEemYvoJuTqP-SooyrlJO4X6ZblLU44";
+  "ZonaVetsa adalah portal digital resmi SMK Veteran 1 Sukoharjo. Solusi terpadu e-learning untuk materi belajar, tugas harian, ujian online (CBT), absensi QR Code, dan galeri karya siswa.";
+const GOOGLE_SITE_VERIFICATION = "-Ck1-TjpyrMpmCVh3fp25rsvayUofLvSvEKcDGJSo9s";
 
 export const viewport: Viewport = {
   themeColor: "#002b5b",
@@ -18,16 +16,12 @@ export const viewport: Viewport = {
   maximumScale: 1,
 };
 
-const poppins = Poppins({
+// ━━ Font: Inter — Base 15px, antialiased ━━
+const inter = Inter({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700", "800"],
-  variable: "--font-poppins",
-});
-
-const spaceGrotesk = Space_Grotesk({
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
-  variable: "--font-space-grotesk",
+  variable: "--font-inter",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -104,21 +98,11 @@ export const metadata: Metadata = {
     siteName: SITE_NAME,
     title: `${SITE_NAME} - Portal Digital SMK Veteran 1 Sukoharjo`,
     description: SITE_DESCRIPTION,
-    images: [
-      {
-        url: OG_IMAGE_PATH,
-        width: 1200,
-        height: 630,
-        alt: `${SITE_NAME} - Portal Digital SMK Veteran 1 Sukoharjo`,
-        type: "image/png",
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
     title: `${SITE_NAME} - Portal Digital SMK Veteran 1 Sukoharjo`,
     description: SITE_DESCRIPTION,
-    images: [TWITTER_IMAGE_PATH],
     creator: "@smkveteran1",
   },
   facebook: {
@@ -138,7 +122,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id">
+    <html lang="id" className="scroll-smooth">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -149,13 +133,10 @@ export default function RootLayout({
         <meta name="googlebot" content="index,follow" />
         <meta name="google" content="notranslate" />
         {/* PWA Meta Tags */}
-        <meta name="theme-color" content="#002b5b" />
+        <meta name="theme-color" content="#1a3a6b" />
         <meta name="description" content="Portal Digital SMK Veteran 1 Sukoharjo - Akses materi pembelajaran, tugas, dan absensi" />
-        <link rel="manifest" href="/manifest.json" />
-        <link rel="apple-touch-icon" href="/gambar/apple-touch-icon.png" />
-        <link rel="icon" type="image/x-icon" href="/gambar/favicon.ico" />
       </head>
-      <body className={`${poppins.variable} ${spaceGrotesk.variable}`}>
+      <body className={`${inter.variable} antialiased`}>
         {children}
         <Toaster />
       </body>

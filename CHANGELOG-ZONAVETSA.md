@@ -1,5 +1,54 @@
 # Changelog ZonaVetsa-Next (Versi Terbaru)
 
+## 24. Puncak Optimasi SEO, UI/UX, & Stabilitas Ujian (Patch v3.5)
+- **Optimalisasi SEO Skala Penuh:** Penerapan "School" JSON-LD, pembersihan `sitemap.xml` dari rute privat admin/guru, perbaikan `robots.txt` agar sesuai standar Google, serta pembaruan deskripsi meta yang kuat agar website optimal terindeks di mesin pencari.
+- **GenerateMetadata Dinamis:** URL portofolio siswa yang dibagikan kini memiliki *OpenGraph/Twitter Cards* yang dinamis, mengambil gambar dan judul langsung dari karya asli sang pembuat.
+- **Perbaikan Krusial Modul Ujian:** Memperbaiki insiden sinkronisasi *timer* (menggunakan state `useRef`) sehingga mencegah "double-submit" otomatis saat waktu habis. Opsi jawaban yang hanya memuat spasi/kosong disaring secara efektif.
+- **Sinkronisasi Poin Esai:** Evaluasi jawaban esai oleh guru kini memicu kalkulasi ulang skor secara otomatis dan menyelaraskan penambahan poin ke *leaderboard* siswa secara real-time.
+- **AI Chat Popup Cerdas (ZonaVetsa AI):** Implementasi asisten AI melayang di seluruh dashboard yang kini mendukung model **Owl-Alpha** via **OpenRouter** (dengan fallback ke Gemini 1.5 Flash).
+- **Personalisasi AI & Deteksi Profil:** AI kini secara otomatis mengenali nama dan kelas pengguna yang sedang login untuk memberikan jawaban yang lebih relevan dan personal.
+- **Animasi & UI Premium:** Penambahan animasi *typing indicator* (mengetik), transisi pesan menggunakan *Framer Motion*, dan notifikasi "Butuh bantuan?" yang interaktif.
+- **Respon To-The-Point:** Optimasi instruksi sistem agar AI menjawab secara langsung, ringkas, dan menghindari basa-basi yang tidak perlu.
+- **Halaman Changelog Publik:** Penambahan rute publik `/changelog` agar pengguna dan pihak sekolah bisa secara transparan melihat linimasa pembaruan ZonaVetsa secara kronologis.
+
+## 23. Pengumuman Siswa, Guru, dan Admin (Patch v3.4)
+- **Feed Pengumuman Siswa dari Database:** Menu `Pengumuman` pada dashboard siswa sekarang menampilkan pengumuman aktif dari guru dan admin, lengkap dengan filter target siswa dan target kelas.
+- **Input Pengumuman untuk Guru:** Guru kini memiliki menu khusus untuk membuat pengumuman baru, memilih target semua kelas atau kelas tertentu, memberi pin, mengatur status aktif, serta masa berlaku pengumuman.
+- **Input Pengumuman untuk Admin:** Admin juga mendapat halaman pengumuman untuk membuat informasi resmi sekolah yang bisa diarahkan ke semua siswa atau kelas tertentu.
+- **Pengumuman Masuk ke Notifikasi Siswa:** Saat guru atau admin membuat pengumuman, siswa target sekarang langsung menerima notifikasi realtime di lonceng notifikasi dengan tautan menuju menu pengumuman.
+- **Sinkronisasi Menu Dashboard:** Navigasi guru dan admin diperbarui agar halaman pengumuman bisa diakses langsung dari sidebar, dan shortcut cepat admin ikut ditambahkan di overview.
+- **Update Database Announcement & Notification Type:** `001_initial_schema.sql` memang perlu penambahan database, sehingga ditambahkan tabel `announcements`, trigger `updated_at`, realtime publication, serta perluasan tipe notifikasi `announcement` melalui migrasi lanjutan `003_announcements.sql` dan `004_notification_announcement_type.sql`.
+- **Sinkronisasi Changelog Web:** Seluruh catatan fitur pengumuman ikut dimasukkan ke changelog dokumen utama, modal changelog web, dan tab `Changelog Web` di admin panel.
+
+## 22. Link Publik HTML untuk Galeri Karya (Patch v3.3)
+- **Route Langsung untuk `index.html`:** File HTML yang diupload dari menu siswa pada Galeri Karya sekarang otomatis mendapat `public_slug` unik sehingga bisa dibuka langsung lewat link seperti `localhost:3000/nama_siswa`.
+- **Copy Link Otomatis & Manual:** Setelah upload HTML berhasil, sistem mencoba langsung menyalin link publik ke clipboard. Tombol **Copy Link** juga ditambahkan pada tampilan siswa, guru, dan admin galeri.
+- **Banyak HTML per Siswa Tetap Aman:** Jika satu siswa mengupload beberapa file `index.html`, setiap karya akan memperoleh slug unik berurutan agar tidak saling menimpa.
+- **Preview Web Asli untuk HTML/CSS/JS:** Halaman publik berbasis slug kini merender konten `HTML`, `CSS`, dan `JavaScript` inline sebagai preview web aktif, bukan lagi menampilkan kode mentahan.
+- **Responsif untuk Semua Device:** Tampilan preview publik diperbarui agar nyaman dipakai di mobile, tablet, dan desktop dengan area baca yang lebih fleksibel.
+- **Sinkronisasi Changelog:** Catatan rilis ini ikut diperbarui pada dokumen changelog utama, modal changelog web, dan tab **Changelog Web** di panel admin.
+- **Update Database:** Tabel `portofolios` pada `001_initial_schema.sql` ditambah kolom `public_slug` dengan unique index agar mapping link publik stabil.
+
+## 21. Refactor UI/UX Menu Ujian Guru & Siswa (Patch v3.2)
+- **Refactor Tata Letak Ujian Guru:** Menu ujian pada dashboard guru diperbarui dengan pola **Aksi Cepat** dan **Fungsi Lain** agar pilihan tombol lebih terarah dan tidak menumpuk.
+- **Akses Fungsi Guru Lebih Friendly:** Tombol utama (`Kelola Soal`, `Lihat Hasil`, `Publish/Draft`) diprioritaskan, sedangkan fungsi lanjutan (`Koreksi Essay`, `Edit`, `Hapus`) dapat dibuka lewat panel tambahan.
+- **Validasi Konfirmasi Submit Siswa:** Sebelum muncul dialog konfirmasi pengiriman, sistem sekarang memeriksa soal kosong terlebih dahulu.
+- **Auto-Arah ke Soal Belum Terjawab:** Jika masih ada jawaban kosong, siswa langsung diarahkan ke nomor soal pertama yang belum diisi beserta notifikasi.
+- **Penyederhanaan UI Ujian Siswa:** Ditambahkan tombol cepat menuju soal belum dijawab pada panel ringkasan agar proses review jawaban jadi lebih mudah.
+- **Update Changelog Web:** Konten pada modal changelog web diperbarui ke **Update v3.2** dengan fokus pembaruan menu ujian guru dan siswa.
+
+## 20. Restorasi File Manager & Penyempurnaan Ekstrem Dark Mode (Patch v3.1)
+- **Fokus Ulang File Manager:** Dasbor siswa direstorasi kembali fitrahnya untuk memfokuskan pengelolaan materi belajar dari File Manager.
+- **Sapu Bersih Dark Mode (Sweep Action):** Modifikasi pada lebih dari **80 komponen** `.tsx` untuk membatalkan `radial gradient background` berwarna putih, garis pemisah putih, animasi *loading skeleton* keputihan (`bg-slate-100`), hingga efek *hover* yang luput digelapkan pada mode malam.
+- **Standarisasi Kontras Komponen Web:** Menu-menu seperti *Ujian Guru* dan *Settings Admin* yang elemen formulirnya (`<textarea>`) belum patuh tema gelap—kini sudah diperkokoh dengan `dark:bg-slate-900 border dark:border-slate-800`.
+## 19. Refactor UI/UX Menyeluruh (Modern Minimalis)
+- **Desain Sistem Baru:** Tema sekolah modern dengan skema warna dominan **Navy**, **Teal**, dan **Amber**. Menggunakan keseluruhan font **Inter**.
+- **Perombakan Layout Global:** Halaman login dengan tata letak layar-belah (desktop) dan satu layar (mobile).
+- **Navigasi Dashboard Baru:** Sidebar mendukung status aktif berbasis `bg-navy-50` ber-border `teal`. Tambahan *Bottom Tab Bar* eksklusif fitur mobile.
+- **Standarisasi Ikonografi:** Semua icon dimigrasikan penuh menjadi **Lucide Icons** dengan standarisasi (mapping lengkap tersedia di `icon-map.md`).
+- **Halaman Fungsional Baru:** *Jadwal* & *Pengumuman* (Siswa), *Laporan Kelas* (Guru), *Manajemen User* yang baru digabung (Admin).
+- **Optimasi Low-end Mobile:** Penghapusan background efek blur di lebar min *viewport* <768px.
+
 Dokumen ini berisi rekapitulasi komprehensif dari semua fitur baru, struktur *database*, serta pembaruan antarmuka (UI/UX) yang diselesaikan dalam serangkaian fase perbaikan skala besar di aplikasi **ZonaVetsa-Next**.
 
 ---

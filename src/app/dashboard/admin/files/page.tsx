@@ -165,7 +165,7 @@ export default function AdminFilesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-primary">File Manager</h2>
-          <p className="text-gray-500">Kelola file pembelajaran</p>
+          <p className="text-slate-500 dark:text-slate-400">Kelola file pembelajaran</p>
         </div>
         <div className="flex items-center gap-2">
           <Button onClick={() => setIsFolderModalOpen(true)} variant="outline">
@@ -186,7 +186,7 @@ export default function AdminFilesPage() {
             {index > 0 && <span className="text-gray-400">/</span>}
             <button
               onClick={() => navigateToBreadcrumb(index)}
-              className={`hover:text-primary ${index === breadcrumbs.length - 1 ? "font-bold text-primary" : "text-gray-500"}`}
+              className={`hover:text-primary ${index === breadcrumbs.length - 1 ? "font-bold text-primary" : "text-slate-500 dark:text-slate-400"}`}
             >
               {crumb.name}
             </button>
@@ -220,9 +220,9 @@ export default function AdminFilesPage() {
 
       {/* Files Grid */}
       {isLoading ? (
-        <div className="text-center py-12 text-gray-500">Memuat...</div>
+        <div className="text-center py-12 text-slate-500 dark:text-slate-400">Memuat...</div>
       ) : filteredFiles.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
+        <div className="text-center py-12 text-slate-500 dark:text-slate-400">
           <FolderOpen size={48} className="mx-auto mb-3 opacity-50" />
           <p>Tidak ada file</p>
         </div>
@@ -232,7 +232,7 @@ export default function AdminFilesPage() {
             <div
               key={file.id}
               onClick={() => navigateToFolder(file)}
-              className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+              className="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer group"
             >
               <div className="flex items-start justify-between mb-2">
                 {file.type === "folder" ? (
@@ -245,17 +245,17 @@ export default function AdminFilesPage() {
                     e.stopPropagation();
                     handleDelete(file);
                   }}
-                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-100 rounded text-danger"
+                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-slate-800 rounded text-danger"
                 >
                   <Trash2 size={14} />
                 </button>
               </div>
               <p className="font-medium text-sm truncate">{file.name}</p>
-              <p className="text-xs text-gray-500 truncate">{file.type}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{file.type}</p>
               {file.creator_name && (
                 <div className="flex items-center gap-1 mt-2 pt-2 border-t">
                   <Avatar src={file.creator_avatar} name={file.creator_name} size="sm" />
-                  <span className="text-xs text-gray-500 truncate">{file.creator_name}</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 truncate">{file.creator_name}</span>
                 </div>
               )}
             </div>
@@ -316,9 +316,9 @@ export default function AdminFilesPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center">
+            <div className="border-2 border-dashed border-gray-200 dark:border-slate-800 rounded-lg p-8 text-center">
               <Upload size={32} className="mx-auto mb-2 text-gray-400" />
-              <p className="text-sm text-gray-500">Klik untuk pilih file</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Klik untuk pilih file</p>
               <p className="text-xs text-gray-400 mt-1">atau drag and drop</p>
             </div>
           </div>

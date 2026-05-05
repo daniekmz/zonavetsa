@@ -449,7 +449,7 @@ export default function GuruFileManagerPage() {
           <Avatar src={teacherAvatar} name="Guru" size="md" className="ring-2 ring-primary" />
           <div>
             <h2 className="text-2xl font-bold text-primary">File Manager</h2>
-            <p className="text-gray-500">
+            <p className="text-slate-500 dark:text-slate-400">
               Pilih kelas terlebih dahulu, lalu buat folder atau upload materi ke kelas tersebut
             </p>
           </div>
@@ -474,7 +474,7 @@ export default function GuruFileManagerPage() {
 
       {/* Search & Sort Bar */}
       {selectedClassId && (
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-slate-800">
           <div className="flex flex-wrap items-center gap-4">
             <div className="min-w-[220px]">
               <Select value={selectedClassId} onValueChange={handleSelectClass}>
@@ -519,14 +519,14 @@ export default function GuruFileManagerPage() {
       {/* Classes Dashboard */}
       {!selectedClassId ? (
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-700">Kelas Anda</h3>
+          <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Kelas Anda</h3>
           {classes.length === 0 ? (
-            <div className="bg-white rounded-xl p-12 text-center shadow-sm">
+            <div className="bg-white dark:bg-slate-900 rounded-xl p-12 text-center shadow-sm">
               <Folder size={64} className="mx-auto text-gray-300 mb-4" />
-              <h3 className="text-lg font-semibold text-gray-700 mb-2">
+              <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-2">
                 Belum Ada Kelas
               </h3>
-              <p className="text-gray-500">
+              <p className="text-slate-500 dark:text-slate-400">
                 Anda belum memiliki kelas dengan materi
               </p>
             </div>
@@ -536,7 +536,7 @@ export default function GuruFileManagerPage() {
                 <div
                   key={cls.id}
                   onClick={() => handleSelectClass(cls.id!)}
-                  className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md cursor-pointer transition-all hover:-translate-y-1 border-2 border-transparent hover:border-primary group"
+                  className="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-sm hover:shadow-md cursor-pointer transition-all hover:-translate-y-1 border-2 border-transparent hover:border-primary group"
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div className="w-12 h-12 bg-secondary/10 rounded-lg flex items-center justify-center">
@@ -547,13 +547,13 @@ export default function GuruFileManagerPage() {
                         e.stopPropagation();
                         toggleClassExpand(cls.id!);
                       }}
-                      className="p-2 hover:bg-gray-100 rounded-lg"
+                      className="p-2 hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-slate-800 rounded-lg"
                     >
                       {expandedClasses.has(cls.id!) ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                     </button>
                   </div>
-                  <h4 className="font-semibold text-gray-800 mb-1">{cls.name}</h4>
-                  <div className="flex items-center gap-4 text-sm text-gray-500">
+                  <h4 className="font-semibold text-slate-800 dark:text-slate-100 mb-1">{cls.name}</h4>
+                  <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
                     <span>{cls.fileCount || 0} file</span>
                     {cls.lastUpdated && (
                       <span>{formatDate(cls.lastUpdated)}</span>
@@ -574,7 +574,7 @@ export default function GuruFileManagerPage() {
                 setCurrentPath([]);
                 setBreadcrumbs([{ id: null, name: "Beranda" }]);
               }}
-              className="text-gray-500 hover:text-primary"
+              className="text-slate-500 dark:text-slate-400 hover:text-primary"
             >
               Daftar Kelas
             </button>
@@ -590,7 +590,7 @@ export default function GuruFileManagerPage() {
                   className={`hover:text-primary ${
                     index === breadcrumbs.length - 1
                       ? "text-primary font-medium"
-                      : "text-gray-500"
+                      : "text-slate-500 dark:text-slate-400"
                   }`}
                 >
                   {crumb.name}
@@ -603,19 +603,19 @@ export default function GuruFileManagerPage() {
           {isLoading ? (
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {[...Array(8)].map((_, i) => (
-                <div key={i} className="bg-white rounded-xl p-4 animate-pulse">
-                  <div className="w-12 h-12 bg-gray-200 rounded-lg mx-auto mb-3" />
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mx-auto" />
+                <div key={i} className="bg-white dark:bg-slate-900 rounded-xl p-4 animate-pulse">
+                  <div className="w-12 h-12 bg-gray-200 dark:bg-slate-700 rounded-lg mx-auto mb-3" />
+                  <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-3/4 mx-auto" />
                 </div>
               ))}
             </div>
           ) : sortedFiles.length === 0 ? (
-            <div className="bg-white rounded-xl p-12 text-center shadow-sm">
+            <div className="bg-white dark:bg-slate-900 rounded-xl p-12 text-center shadow-sm">
               <FolderOpen size={64} className="mx-auto text-gray-300 mb-4" />
-              <h3 className="text-lg font-semibold text-gray-700 mb-2">
+              <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-2">
                 {searchTerm ? "Tidak Ditemukan" : "Folder Kosong"}
               </h3>
-              <p className="text-gray-500">
+              <p className="text-slate-500 dark:text-slate-400">
                 {searchTerm ? `Tidak ada file bernama "${searchTerm}"` : "Upload file atau buat folder baru untuk memulai"}
               </p>
             </div>
@@ -625,7 +625,7 @@ export default function GuruFileManagerPage() {
                 <div
                   key={file.id}
                   onClick={() => handleFileClick(file)}
-                  className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md cursor-pointer transition-all hover:-translate-y-1 border-2 border-transparent hover:border-primary group"
+                  className="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-sm hover:shadow-md cursor-pointer transition-all hover:-translate-y-1 border-2 border-transparent hover:border-primary group"
                 >
                   <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-3">
                     {file.type === "folder" ? (
@@ -634,11 +634,11 @@ export default function GuruFileManagerPage() {
                       <FileText size={24} className="text-primary" />
                     )}
                   </div>
-                  <p className="text-sm font-medium text-gray-800 text-center truncate">
+                  <p className="text-sm font-medium text-slate-800 dark:text-slate-100 text-center truncate">
                     {file.name}
                   </p>
                   {file.type === "file" && (
-                    <p className="text-xs text-gray-500 text-center mt-1">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-1">
                       {file.size ? formatFileSize(file.size) : ""}
                     </p>
                   )}

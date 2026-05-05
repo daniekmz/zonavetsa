@@ -127,7 +127,7 @@ export function ImportSiswaModal({
             </Button>
           </div>
 
-          <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center">
+          <div className="border-2 border-dashed border-gray-200 dark:border-slate-800 rounded-lg p-6 text-center">
             <input
               ref={fileInputRef}
               type="file"
@@ -145,7 +145,7 @@ export function ImportSiswaModal({
               ) : (
                 <Upload className="w-8 h-8 text-gray-400" />
               )}
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-slate-600 dark:text-slate-300">
                 {file ? file.name : "Klik untuk pilih file Excel"}
               </span>
             </button>
@@ -168,7 +168,7 @@ export function ImportSiswaModal({
                 </span>
               </div>
               {result.errors && result.errors.length > 0 && (
-                <div className="text-xs text-gray-600 max-h-32 overflow-y-auto">
+                <div className="text-xs text-slate-600 dark:text-slate-300 max-h-32 overflow-y-auto">
                   <p className="font-medium">Errors:</p>
                   <ul className="list-disc list-inside">
                     {result.errors.slice(0, 5).map((err, i) => (

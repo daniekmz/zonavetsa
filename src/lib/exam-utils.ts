@@ -18,7 +18,8 @@ export interface ExamSubmissionSummary {
 
 export function calculateExamSubmission(
   questions: ExamQuestion[],
-  answers: Record<string, string>
+  answers: Record<string, string>,
+  gradedEssayPoints: Record<string, number> = {}
 ): ExamSubmissionSummary {
   let totalPoints = 0;
   let earnedPoints = 0;
@@ -42,6 +43,9 @@ export function calculateExamSubmission(
       hasEssayQuestions = true;
       if (studentAnswer) {
         answeredEssayCount += 1;
+      }
+      if (gradedEssayPoints[question.id] !== undefined) {
+        earnedPoints += gradedEssayPoints[question.id];
       }
       continue;
     }

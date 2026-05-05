@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FileText, Globe, Music2, PlaySquare } from "lucide-react";
+import { FileText, Music2, PlaySquare } from "lucide-react";
 
 const IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "webp", "gif", "bmp", "svg", "avif"]);
 const HTML_EXTENSIONS = new Set(["html", "htm"]);
@@ -72,9 +72,10 @@ export const getPortfolioFileKind = (url?: string): PortfolioFileKind => {
 interface PortfolioFilePreviewProps {
   url?: string;
   title?: string;
+  minimal?: boolean;
 }
 
-export function PortfolioFilePreview({ url, title }: PortfolioFilePreviewProps) {
+export function PortfolioFilePreview({ url, title, minimal = false }: PortfolioFilePreviewProps) {
   const kind = getPortfolioFileKind(url);
   const fileName = getFileNameFromUrl(url);
   const [htmlSource, setHtmlSource] = useState("");
@@ -115,7 +116,7 @@ export function PortfolioFilePreview({ url, title }: PortfolioFilePreviewProps) 
     return (
       <div className="flex flex-col items-center justify-center gap-2 px-6 py-12 text-center">
         <FileText size={44} className="text-primary" />
-        <p className="break-words text-sm text-gray-600">File tidak tersedia</p>
+        <p className="break-words text-sm text-slate-600 dark:text-slate-300">File tidak tersedia</p>
       </div>
     );
   }
@@ -126,17 +127,12 @@ export function PortfolioFilePreview({ url, title }: PortfolioFilePreviewProps) 
 
   if (kind === "html") {
     return (
-      <div className="space-y-2 p-3">
-        <div className="flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700">
-          <Globe size={14} />
-          Preview HTML5 aktif
-        </div>
-        {isHtmlLoading ? <p className="text-xs text-gray-500">Memuat preview HTML...</p> : null}
+      <div className="h-full w-full">
         <iframe
           src={htmlSource ? undefined : url}
           srcDoc={htmlSource || undefined}
           title={title || fileName}
-          className="h-[440px] w-full rounded-lg border border-gray-200 bg-white"
+          className={minimal ? "block h-full w-full border-0 bg-white" : "block h-[440px] w-full border-0 bg-white"}
           loading="lazy"
           sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-pointer-lock allow-presentation allow-downloads"
           referrerPolicy="no-referrer"
@@ -150,7 +146,7 @@ export function PortfolioFilePreview({ url, title }: PortfolioFilePreviewProps) 
       <iframe
         src={url}
         title={title || fileName}
-        className="h-[520px] w-full border-0 bg-white"
+        className="h-[520px] w-full border-0 bg-white dark:bg-slate-900"
         loading="lazy"
       />
     );
@@ -168,7 +164,7 @@ export function PortfolioFilePreview({ url, title }: PortfolioFilePreviewProps) 
     return (
       <div className="flex flex-col items-center justify-center gap-3 px-6 py-10 text-center">
         <Music2 size={40} className="text-primary" />
-        <p className="break-words text-sm text-gray-600">{fileName}</p>
+        <p className="break-words text-sm text-slate-600 dark:text-slate-300">{fileName}</p>
         <audio controls preload="metadata" className="w-full max-w-lg">
           <source src={url} />
         </audio>
@@ -181,7 +177,7 @@ export function PortfolioFilePreview({ url, title }: PortfolioFilePreviewProps) 
       <iframe
         src={url}
         title={title || fileName}
-        className="h-[440px] w-full rounded-lg border-0 bg-white"
+        className="h-[440px] w-full rounded-lg border-0 bg-white dark:bg-slate-900"
         loading="lazy"
       />
     );
@@ -190,8 +186,8 @@ export function PortfolioFilePreview({ url, title }: PortfolioFilePreviewProps) 
   return (
     <div className="flex flex-col items-center justify-center gap-2 px-6 py-12 text-center">
       <PlaySquare size={40} className="text-primary" />
-      <p className="break-words text-sm text-gray-600">{fileName}</p>
-      <p className="text-xs text-gray-500">Preview langsung belum tersedia untuk tipe file ini.</p>
+      <p className="break-words text-sm text-slate-600 dark:text-slate-300">{fileName}</p>
+      <p className="text-xs text-slate-500 dark:text-slate-400">Preview langsung belum tersedia untuk tipe file ini.</p>
     </div>
   );
 }

@@ -7,7 +7,7 @@ const cardVariants = cva(
   {
     variants: {
       variant: {
-        default: "border-slate-200 bg-white hover:border-cyan-300/60 dark:border-slate-800 dark:bg-slate-950/70 dark:hover:border-cyan-400/30",
+        default: "border-slate-200 bg-white dark:bg-slate-900 hover:border-cyan-300/60 dark:border-slate-800 dark:bg-slate-950/70 dark:hover:border-cyan-400/30",
         cyber: "border-cyan-300/50 bg-cyan-50/70 hover:border-cyan-400 dark:border-cyan-500/30 dark:bg-cyan-500/10",
         neon: "border-emerald-300/50 bg-emerald-50/70 hover:border-emerald-400 dark:border-emerald-500/30 dark:bg-emerald-500/10",
         ai: "border-blue-300/50 bg-blue-50/70 hover:border-blue-400 dark:border-blue-500/30 dark:bg-blue-500/10",

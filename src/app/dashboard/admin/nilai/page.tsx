@@ -83,7 +83,7 @@ export default function AdminNilaiPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-primary">Nilai Siswa</h2>
-          <p className="text-gray-500">Lihat dan export nilai ujian siswa</p>
+          <p className="text-slate-500 dark:text-slate-400">Lihat dan export nilai ujian siswa</p>
         </div>
         <Button onClick={handleExport} variant="outline">
           <Download size={18} />
@@ -93,28 +93,28 @@ export default function AdminNilaiPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl p-6 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Total Nilai</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Total Nilai</p>
               <p className="text-2xl font-bold text-primary">{filteredScores.length}</p>
             </div>
             <BarChart3 size={32} className="text-primary/30" />
           </div>
         </div>
-        <div className="bg-white rounded-xl p-6 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Rata-rata</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Rata-rata</p>
               <p className="text-2xl font-bold text-primary">{getAverageScore()}</p>
             </div>
             <BarChart3 size={32} className="text-success/30" />
           </div>
         </div>
-        <div className="bg-white rounded-xl p-6 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Pass Rate</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Pass Rate</p>
               <p className="text-2xl font-bold text-primary">{getPassRate()}%</p>
             </div>
             <BarChart3 size={32} className="text-warning/30" />
@@ -156,31 +156,31 @@ export default function AdminNilaiPage() {
 
       {/* Scores Table */}
       {isLoading ? (
-        <div className="text-center py-12 text-gray-500">Memuat...</div>
+        <div className="text-center py-12 text-slate-500 dark:text-slate-400">Memuat...</div>
       ) : filteredScores.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
+        <div className="text-center py-12 text-slate-500 dark:text-slate-400">
           <BarChart3 size={48} className="mx-auto mb-3 opacity-50" />
           <p>Tidak ada nilai</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50 dark:bg-slate-800">
                 <tr>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Ujian</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">NIS Siswa</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Nilai</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Tanggal Submit</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">Ujian</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">NIS Siswa</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">Nilai</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">Tanggal Submit</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {filteredScores.map((score) => {
                   const exam = exams.find((e) => e.id === score.exam_id);
                   return (
-                    <tr key={score.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm text-gray-800">{exam?.title || "-"}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{score.student_nis || "-"}</td>
+                    <tr key={score.id} className="hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-800">
+                      <td className="px-4 py-3 text-sm text-slate-800 dark:text-slate-100">{exam?.title || "-"}</td>
+                      <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{score.student_nis || "-"}</td>
                       <td className="px-4 py-3">
                         <span
                           className={`px-2 py-1 text-sm rounded-full ${
@@ -192,7 +192,7 @@ export default function AdminNilaiPage() {
                           {score.score}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-500">
+                      <td className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
                         {score.submitted_at ? new Date(score.submitted_at).toLocaleDateString("id-ID") : "-"}
                       </td>
                     </tr>

@@ -114,7 +114,7 @@ export default function LeaderboardPage() {
               <Button
                 variant={filterType === "global" ? "secondary" : "ghost"}
                 size="sm"
-                className={`h-9 flex-1 rounded-lg px-4 lg:flex-none ${filterType === "global" ? "" : "text-white/70 hover:bg-white/10 hover:text-white"}`}
+                className={`h-9 flex-1 rounded-lg px-4 lg:flex-none ${filterType === "global" ? "" : "text-white/70 hover:bg-white dark:hover:bg-slate-800/10 hover:text-white"}`}
                 onClick={() => setFilterType("global")}
               >
                 <Globe size={15} />
@@ -123,7 +123,7 @@ export default function LeaderboardPage() {
               <Button
                 variant={filterType === "class" ? "secondary" : "ghost"}
                 size="sm"
-                className={`h-9 flex-1 rounded-lg px-4 lg:flex-none ${filterType === "class" ? "" : "text-white/70 hover:bg-white/10 hover:text-white"}`}
+                className={`h-9 flex-1 rounded-lg px-4 lg:flex-none ${filterType === "class" ? "" : "text-white/70 hover:bg-white dark:hover:bg-slate-800/10 hover:text-white"}`}
                 onClick={() => setFilterType("class")}
               >
                 <Users size={15} />
@@ -155,9 +155,9 @@ export default function LeaderboardPage() {
       </div>
 
       {students.length === 0 ? (
-        <div className="rounded-3xl border-2 border-dashed border-slate-300 bg-white p-10 text-center dark:border-slate-700 dark:bg-slate-900/80">
+        <div className="rounded-3xl border-2 border-dashed border-slate-300 bg-white dark:bg-slate-900 p-10 text-center dark:border-slate-700 dark:bg-slate-900/80">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800">
-            <Users size={28} className="text-slate-500" />
+            <Users size={28} className="text-slate-500 dark:text-slate-400" />
           </div>
           <p className="text-lg font-semibold text-slate-700 dark:text-slate-100">Data peringkat belum tersedia</p>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Belum ada data yang cukup untuk ditampilkan.</p>
@@ -206,7 +206,7 @@ export default function LeaderboardPage() {
                         item.rank === 1
                           ? "bg-amber-500 text-white"
                           : item.rank === 2
-                            ? "bg-slate-500 text-white"
+                            ? "bg-slate-50 dark:bg-slate-8000 text-white"
                             : "bg-orange-500 text-white"
                       }`}
                     >
@@ -216,7 +216,7 @@ export default function LeaderboardPage() {
                   </div>
 
                   <div className="mt-4 flex items-center gap-3">
-                    <div className="relative h-14 w-14 overflow-hidden rounded-2xl border border-white/70 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <div className="relative h-14 w-14 overflow-hidden rounded-2xl border border-white/70 bg-white dark:bg-slate-900 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                       {item.student.avatar_url ? (
                         <img src={item.student.avatar_url} alt={item.student.name} className="h-full w-full object-cover" />
                       ) : (
@@ -265,7 +265,7 @@ export default function LeaderboardPage() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: idx * 0.04 }}
-                className={`relative flex flex-col gap-3 rounded-2xl border bg-white p-4 shadow-sm transition-colors sm:flex-row sm:items-center sm:justify-between dark:bg-slate-900/80 ${
+                className={`relative flex flex-col gap-3 rounded-2xl border bg-white dark:bg-slate-900 p-4 shadow-sm transition-colors sm:flex-row sm:items-center sm:justify-between dark:bg-slate-900/80 ${
                   isCurrentUser
                     ? "border-primary/40 ring-1 ring-primary/20"
                     : "border-slate-200 dark:border-slate-800"
@@ -329,7 +329,7 @@ export default function LeaderboardPage() {
             );
           })
         ) : (
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 text-center dark:border-slate-800 dark:bg-slate-900/80">
+          <div className="rounded-3xl border border-slate-200 bg-white dark:bg-slate-900 p-6 text-center dark:border-slate-800 dark:bg-slate-900/80">
             <p className="text-sm text-slate-500 dark:text-slate-400">Belum ada data di luar podium.</p>
           </div>
         )}
@@ -348,7 +348,7 @@ function BreakdownCard({
   value: number;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/80">
+    <div className="rounded-2xl border border-slate-200 bg-white dark:bg-slate-900 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/80">
       <div className="flex items-center justify-between">
         <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{label}</span>
         <Icon size={16} className="text-primary" />

@@ -10,7 +10,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       <input
         type={type}
         className={cn(
-          "flex h-11 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm font-medium text-slate-900 caret-slate-900 shadow-sm ring-offset-background transition-colors duration-200 file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 focus-visible:ring-offset-2 focus-visible:border-cyan-400 disabled:cursor-not-allowed disabled:opacity-50 hover:border-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:caret-slate-100 dark:placeholder:text-slate-500 dark:hover:border-slate-600 dark:focus-visible:ring-offset-slate-950",
+          "flex h-11 w-full rounded-xl border border-slate-300 bg-white dark:bg-slate-900 px-3.5 py-2 text-sm font-medium text-slate-900 caret-slate-900 shadow-sm ring-offset-background transition-colors duration-200 file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 focus-visible:ring-offset-2 focus-visible:border-cyan-400 disabled:cursor-not-allowed disabled:opacity-50 hover:border-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:caret-slate-100 dark:placeholder:text-slate-500 dark:text-slate-400 dark:hover:border-slate-600 dark:focus-visible:ring-offset-slate-950",
           className
         )}
         ref={ref}

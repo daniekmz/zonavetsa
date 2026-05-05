@@ -274,7 +274,7 @@ export default function GuruTugasPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-primary">Manajemen Tugas</h2>
-          <p className="text-gray-500">Kelola tugas untuk siswa</p>
+          <p className="text-slate-500 dark:text-slate-400">Kelola tugas untuk siswa</p>
         </div>
         <Button onClick={() => openModal()} className="bg-success hover:bg-success/90">
           <Plus size={18} />
@@ -306,12 +306,12 @@ export default function GuruTugasPage() {
       </div>
 
       {isLoading ? (
-        <div className="text-center py-12 text-gray-500">Memuat...</div>
+        <div className="text-center py-12 text-slate-500 dark:text-slate-400">Memuat...</div>
       ) : filteredAssignments.length === 0 ? (
-        <div className="bg-white rounded-xl p-12 text-center shadow-sm">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-12 text-center shadow-sm">
           <FileText size={48} className="mx-auto mb-3 opacity-50" />
-          <h3 className="text-lg font-semibold text-gray-700 mb-2">Belum Ada Tugas</h3>
-          <p className="text-gray-500 mb-4">Buat tugas baru untuk siswa</p>
+          <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-2">Belum Ada Tugas</h3>
+          <p className="text-slate-500 dark:text-slate-400 mb-4">Buat tugas baru untuk siswa</p>
           <Button onClick={() => openModal()} className="bg-success hover:bg-success/90">
             <Plus size={18} />
             Buat Tugas
@@ -320,21 +320,21 @@ export default function GuruTugasPage() {
       ) : (
         <div className="grid gap-4">
           {filteredAssignments.map((assignment) => (
-            <div key={assignment.id} className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div key={assignment.id} className="bg-white dark:bg-slate-900 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <h3 className="font-bold text-lg text-gray-800">{assignment.title}</h3>
+                    <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">{assignment.title}</h3>
                     <span className={`px-2 py-1 text-xs rounded-full ${
-                      assignment.status === "active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
+                      assignment.status === "active" ? "bg-green-100 text-green-700" : "bg-gray-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200"
                     }`}>
                       {assignment.status === "active" ? "Aktif" : "Ditutup"}
                     </span>
                   </div>
                   {assignment.description && (
-                    <p className="text-gray-600 mb-3">{assignment.description}</p>
+                    <p className="text-slate-600 dark:text-slate-300 mb-3">{assignment.description}</p>
                   )}
-                  <div className="flex items-center gap-4 text-sm text-gray-500">
+                  <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
                     <span className="flex items-center gap-1">
                       <Users size={14} />
                       {classes.find(c => c.id === assignment.class_id)?.name || "-"}
@@ -439,21 +439,21 @@ export default function GuruTugasPage() {
             {isSubmissionsLoading ? (
               <div className="text-center py-8">Memuat...</div>
             ) : submissions.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-slate-500 dark:text-slate-400">
                 <FileText size={48} className="mx-auto mb-4 opacity-50" />
                 <p>Belum ada siswa yang mengumpulkan</p>
               </div>
             ) : (
               <div className="space-y-4">
                 {submissions.map((sub: any) => (
-                  <div key={sub.id} className="p-4 border rounded-lg bg-gray-50">
+                  <div key={sub.id} className="p-4 border rounded-lg bg-gray-50 dark:bg-slate-800">
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex items-center gap-3">
                         <Avatar src={sub.student_avatar} name={sub.student_name || sub.student_nis} size="md" />
                         <div>
                           <p className="font-medium">{sub.student_name || sub.student_nis}</p>
-                          <p className="text-xs text-gray-500">NIS: {sub.student_nis}</p>
-                          <p className="text-xs text-gray-500">Dikumpulkan: {formatDate(sub.submitted_at)}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">NIS: {sub.student_nis}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">Dikumpulkan: {formatDate(sub.submitted_at)}</p>
                         </div>
                       </div>
                       {sub.graded ? (
@@ -478,7 +478,7 @@ export default function GuruTugasPage() {
                         📎 Lihat File
                       </a>
                     )}
-                    {sub.notes && <p className="text-sm text-gray-600 mt-2">Catatan: {sub.notes}</p>}
+                    {sub.notes && <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">Catatan: {sub.notes}</p>}
                     
                     <GradeForm
                       submission={sub}

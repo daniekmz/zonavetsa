@@ -1,16 +1,26 @@
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Layout Dashboard Siswa
+   Icon mapping baru: ClipboardCheck, BookOpen, FolderOpen, CalendarDays,
+   Megaphone, CircleUserRound, LogOut
+   Menu baru: Jadwal Pelajaran, Pengumuman
+   Bottom tab: Beranda, Tugas, Jadwal, Profil
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 "use client";
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  Briefcase,
-  ClipboardList,
+  BookOpen,
+  CalendarDays,
+  CircleUserRound,
+  ClipboardCheck,
   FolderOpen,
-  GraduationCap,
-  QrCode,
+  House,
+  LayoutDashboard,
+  Megaphone,
+  PencilLine,
   RefreshCw,
   Trophy,
-  User,
 } from "lucide-react";
 import type { Student } from "@/types";
 import { logLogout } from "@/lib/activity-logger";
@@ -86,10 +96,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
           "studentSession",
           JSON.stringify({
             ...parsed,
-            student: {
-              ...parsed.student,
-              ...latestStudent,
-            },
+            student: { ...parsed.student, ...latestStudent },
           })
         );
       }
@@ -98,12 +105,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         .channel(`student-profile-${resolvedStudent.nis}`)
         .on(
           "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "students",
-            filter: `nis=eq.${resolvedStudent.nis}`,
-          },
+          { event: "*", schema: "public", table: "students", filter: `nis=eq.${resolvedStudent.nis}` },
           (payload: any) => {
             const nextStudent = payload.new as Student;
             setStudent((prev) => (prev ? { ...prev, ...nextStudent } : nextStudent));
@@ -112,19 +114,11 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
 
             const currentSessionData = sessionStorage.getItem("studentSession");
             if (!currentSessionData) return;
-
             const currentParsed: StudentSession = JSON.parse(currentSessionData);
             sessionStorage.setItem(
               "studentSession",
-              JSON.stringify({
-                ...currentParsed,
-                student: {
-                  ...currentParsed.student,
-                  ...nextStudent,
-                },
-              })
+              JSON.stringify({ ...currentParsed, student: { ...currentParsed.student, ...nextStudent } })
             );
-
             void syncSidebarStats(nextStudent.nis);
           }
         )
@@ -132,31 +126,14 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
 
       const leaderboardChannel = supabase
         .channel(`student-sidebar-stats-${resolvedStudent.nis}`)
-        .on("postgres_changes", { event: "*", schema: "public", table: "students" }, () => {
-          void syncSidebarStats(resolvedStudent.nis);
-        })
-        .on("postgres_changes", { event: "*", schema: "public", table: "exam_scores" }, () => {
-          void syncSidebarStats(resolvedStudent.nis);
-        })
-        .on("postgres_changes", { event: "*", schema: "public", table: "assignment_submissions" }, () => {
-          void syncSidebarStats(resolvedStudent.nis);
-        })
-        .on("postgres_changes", { event: "*", schema: "public", table: "attendance_records" }, () => {
-          void syncSidebarStats(resolvedStudent.nis);
-        })
-        .on("postgres_changes", { event: "*", schema: "public", table: "activity_logs" }, () => {
-          void syncSidebarStats(resolvedStudent.nis);
-        })
+        .on("postgres_changes", { event: "*", schema: "public", table: "students" }, () => void syncSidebarStats(resolvedStudent.nis))
+        .on("postgres_changes", { event: "*", schema: "public", table: "exam_scores" }, () => void syncSidebarStats(resolvedStudent.nis))
+        .on("postgres_changes", { event: "*", schema: "public", table: "assignment_submissions" }, () => void syncSidebarStats(resolvedStudent.nis))
+        .on("postgres_changes", { event: "*", schema: "public", table: "attendance_records" }, () => void syncSidebarStats(resolvedStudent.nis))
+        .on("postgres_changes", { event: "*", schema: "public", table: "activity_logs" }, () => void syncSidebarStats(resolvedStudent.nis))
         .subscribe();
 
-      const presenceChannel = supabase.channel("online-users", {
-        config: {
-          presence: {
-            key: resolvedStudent.nis,
-          },
-        },
-      });
-
+      const presenceChannel = supabase.channel("online-users", { config: { presence: { key: resolvedStudent.nis } } });
       presenceChannel
         .on("presence", { event: "sync" }, () => undefined)
         .subscribe(async (status: string) => {
@@ -199,12 +176,13 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
 
   if (isLoading || !student) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="panel-surface p-8 text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-cyber text-white shadow-soft-signal">
-            <RefreshCw size={20} className="animate-spin" />
+      <div className="flex min-h-screen items-center justify-center bg-surface dark:bg-background">
+        <div className="rounded-3xl border bg-white dark:bg-slate-900 p-8 text-center shadow-panel dark:bg-card dark:border-slate-800">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-teal/10 text-teal">
+            <RefreshCw size={20} className="animate-spin" aria-hidden="true" />
           </div>
-          <p className="font-medium text-slate-600 dark:text-slate-300">Memuat dashboard siswa...</p>
+          <p className="font-semibold text-navy dark:text-white">Memuat dashboard siswa...</p>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Mohon tunggu sebentar</p>
         </div>
       </div>
     );
@@ -222,34 +200,49 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
       userRole="siswa"
       avatarUrl={student.avatar_url}
       avatarFallback={(student.name || "S").charAt(0)}
-      statBadge={`Lv ${sidebarLevel} • ${sidebarPoints} pts`}
+      statBadge={`Lv ${sidebarLevel} · ${sidebarPoints} pts`}
       navSections={[
         {
           title: "Akses Cepat",
           items: [
             { href: "/dashboard/siswa/ganti-guru", label: "Ganti Guru", icon: RefreshCw },
-            { href: "/dashboard/siswa/absensi", label: "QR Absensi", icon: QrCode },
+            { href: "/dashboard/siswa/absensi", label: "QR Absensi", icon: ClipboardCheck },
           ],
         },
         {
           title: "Overview",
-          items: [{ href: "/dashboard/siswa", label: "Overview & File Manager", icon: FolderOpen }],
+          items: [
+            { href: "/dashboard/siswa", label: "Dashboard & File", icon: LayoutDashboard },
+          ],
         },
         {
           title: "Pembelajaran",
           items: [
-            { href: "/dashboard/siswa/ujian", label: "Ujian", icon: ClipboardList },
-            { href: "/dashboard/siswa/tugas", label: "Tugas", icon: GraduationCap },
-            { href: "/dashboard/siswa/portofolio", label: "Galeri Karya", icon: Briefcase },
+            { href: "/dashboard/siswa/ujian", label: "Ujian", icon: PencilLine },
+            { href: "/dashboard/siswa/tugas", label: "Tugas", icon: BookOpen },
+            { href: "/dashboard/siswa/portofolio", label: "Galeri Karya", icon: FolderOpen },
+          ],
+        },
+        {
+          /* ━━ Menu baru: Jadwal Pelajaran + Pengumuman ━━ */
+          title: "Informasi",
+          items: [
+            { href: "/dashboard/siswa/pengumuman", label: "Pengumuman", icon: Megaphone },
           ],
         },
         {
           title: "Akun",
           items: [
             { href: "/dashboard/siswa/peringkat", label: "Peringkat", icon: Trophy },
-            { href: "/dashboard/siswa/profil", label: "Profil", icon: User },
+            { href: "/dashboard/siswa/profil", label: "Profil", icon: CircleUserRound },
           ],
         },
+      ]}
+      /* ━━ Bottom Tab Bar mobile ≤640px ━━ */
+      bottomTabs={[
+        { href: "/dashboard/siswa", label: "Beranda", icon: House },
+        { href: "/dashboard/siswa/tugas", label: "Tugas", icon: BookOpen },
+        { href: "/dashboard/siswa/profil", label: "Profil", icon: CircleUserRound },
       ]}
       headerTitle="Dashboard Siswa"
       headerSubtitle="Belajar, kumpulkan tugas, dan ikuti update kelas dari satu tempat."

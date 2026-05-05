@@ -14,6 +14,7 @@ const typeIcons: Record<NotificationType, typeof FileText> = {
   exam: ClipboardList,
   file: Upload,
   assignment: ClipboardList,
+  announcement: Bell,
   system: Info,
   profile: User,
   login: User,
@@ -146,7 +147,7 @@ export function NotificationBell({ userKode, userRole }: { userKode: string; use
       <button
         onClick={handleOpen}
         className={cn(
-          "glass-tech relative rounded-2xl p-2.5 text-slate-600 transition-colors hover:bg-white dark:text-slate-300 dark:hover:bg-slate-900/80"
+          "glass-tech relative rounded-2xl p-2.5 text-slate-600 transition-colors hover:bg-white dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-900/80"
         )}
       >
         <Bell size={18} />
@@ -182,7 +183,7 @@ export function NotificationBell({ userKode, userRole }: { userKode: string; use
           {/* Notifications List */}
           <div className="max-h-[400px] overflow-y-auto">
             {isLoading ? (
-              <div className="p-8 text-center text-slate-500">
+              <div className="p-8 text-center text-slate-500 dark:text-slate-400">
                 <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
                 Memuat...
               </div>
@@ -202,7 +203,7 @@ export function NotificationBell({ userKode, userRole }: { userKode: string; use
                     key={notification.id}
                     className={cn(
                       "flex items-start gap-3 px-4 py-3 pr-3 transition-colors",
-                      "hover:bg-slate-50/90 dark:hover:bg-slate-900/70",
+                      "hover:bg-slate-50 dark:bg-slate-800/90 dark:hover:bg-slate-900/70",
                       !notification.is_read && "bg-sky-50/80 dark:bg-sky-500/10"
                     )}
                   >
@@ -230,7 +231,7 @@ export function NotificationBell({ userKode, userRole }: { userKode: string; use
                             {notification.message}
                           </p>
                         )}
-                        <p className="mt-1 text-[10px] text-slate-400 dark:text-slate-500">
+                        <p className="mt-1 text-[10px] text-slate-400 dark:text-slate-500 dark:text-slate-400">
                           {formatTime(notification.created_at)}
                         </p>
                       </div>
@@ -244,7 +245,7 @@ export function NotificationBell({ userKode, userRole }: { userKode: string; use
                         aria-label="Hapus notifikasi"
                         onClick={(e) => handleDeleteNotification(notification.id, e)}
                         disabled={deletingId === notification.id}
-                        className="rounded-xl p-2 text-slate-400 transition hover:bg-white/80 hover:text-danger disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-slate-800"
+                        className="rounded-xl p-2 text-slate-400 transition hover:bg-white/80 dark:bg-slate-900/80 hover:text-danger disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-slate-800"
                       >
                         <Trash2 size={14} />
                       </button>

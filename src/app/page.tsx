@@ -1,3 +1,11 @@
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Landing Page — ZonaVetsa
+   - Navbar: sticky, icon pill, hamburger mobile drawer
+   - Hero: text-4xl mobile / text-6xl desktop, 2 CTA sejajar
+   - Insight: banner tipis 1 baris di bawah hero
+   - Stats: skeleton loader + icon per card
+   - Jurusan: grid 2 kolom mobile / 3 desktop + warna unik
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 "use client";
 
 import Link from "next/link";
@@ -8,21 +16,26 @@ import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase";
 import { getDailyRotatingCopy } from "@/lib/daily-copy";
 import {
-  Activity,
-  ArrowRight,
+  BookMarked,
   BookOpen,
-  BrainCircuit,
+  Briefcase,
+  ChevronRight,
   Cpu,
   GraduationCap,
+  House,
+  Lightbulb,
+  LogIn,
+  Menu,
   MonitorPlay,
   Network,
-  ShieldCheck,
   Tractor,
+  UserCheck,
   Users,
-  Wifi,
   Wrench,
+  X,
 } from "lucide-react";
 
+// ━━ Icon map untuk jurusan ━━
 const iconMap: Record<string, React.ElementType> = {
   MonitorPlay,
   Tractor,
@@ -31,6 +44,16 @@ const iconMap: Record<string, React.ElementType> = {
   Cpu,
   BookOpen,
 };
+
+// ━━ Warna unik per jurusan (index-based fallback) ━━
+const majorColors = [
+  { bg: "bg-navy-50", icon: "bg-navy text-white", border: "border-navy-200" },
+  { bg: "bg-teal-50", icon: "bg-teal text-white", border: "border-teal-200" },
+  { bg: "bg-amber-50", icon: "bg-amber text-white", border: "border-amber-200" },
+  { bg: "bg-purple-50", icon: "bg-purple-600 text-white", border: "border-purple-200" },
+  { bg: "bg-rose-50", icon: "bg-rose-600 text-white", border: "border-rose-200" },
+  { bg: "bg-sky-50", icon: "bg-sky-600 text-white", border: "border-sky-200" },
+];
 
 interface Major {
   id: string;
@@ -47,9 +70,36 @@ interface SchoolStats {
   jurusan?: number;
 }
 
+// ━━ Nav items landing dengan icon ━━
+const navItems = [
+  { href: "#beranda", label: "Beranda", icon: House },
+  { href: "#insight", label: "Insight", icon: Lightbulb },
+  { href: "#jurusan", label: "Jurusan", icon: GraduationCap },
+  { href: "#login", label: "Login", icon: LogIn },
+];
+
 export default function HomePage() {
   const [majors, setMajors] = useState<Major[]>([]);
   const [stats, setStats] = useState<SchoolStats>({});
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  // Deteksi scroll untuk navbar shadow
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 8);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Tutup mobile menu saat resize ke desktop
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) setMobileMenuOpen(false);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     const loadData = async () => {
@@ -75,53 +125,68 @@ export default function HomePage() {
         }, {});
         setStats(mapped);
       }
+      setStatsLoading(false);
     };
 
     loadData();
   }, []);
 
   const statsCards = [
-    { label: "Siswa Aktif", value: stats.students || 0, icon: Users },
-    { label: "Guru", value: stats.guru || 0, icon: GraduationCap },
-    { label: "Karyawan", value: stats.karyawan || 0, icon: ShieldCheck },
-    { label: "Jurusan", value: stats.jurusan || majors.length || 0, icon: Network },
+    { label: "Siswa Aktif", value: stats.students, icon: Users, color: "bg-navy text-white" },
+    { label: "Guru", value: stats.guru, icon: UserCheck, color: "bg-teal text-white" },
+    { label: "Karyawan", value: stats.karyawan, icon: Briefcase, color: "bg-amber text-white" },
+    { label: "Jurusan", value: stats.jurusan ?? majors.length, icon: BookMarked, color: "bg-purple-600 text-white" },
   ];
+
   const dailyInsight = getDailyRotatingCopy("home");
 
-  return (
-    <div className="relative min-h-screen overflow-hidden">
-      <div className="network-node hidden left-[6%] top-[12%] h-14 w-14 p-4 text-cyber md:block">
-        <Wifi />
-      </div>
-      <div
-        className="network-node hidden bottom-[10%] left-[8%] h-16 w-16 p-4 text-secondary md:block"
-        style={{ animationDelay: "1.3s" }}
-      >
-        <Cpu />
-      </div>
-      <div
-        className="network-node hidden right-[7%] top-[17%] h-16 w-16 p-4 text-primary-light md:block"
-        style={{ animationDelay: "2.1s" }}
-      >
-        <BrainCircuit />
-      </div>
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "School",
+    name: "SMK Veteran 1 Sukoharjo",
+    url: "https://zonavetsanext.rnet.lt",
+    description: "Portal digital pembelajaran, absensi, tugas, dan ujian untuk siswa SMK Veteran 1 Sukoharjo.",
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: "Sukoharjo",
+      addressRegion: "Jawa Tengah",
+      addressCountry: "ID",
+    },
+    sameAs: [
+      "https://zonavetsanext.rnet.lt"
+    ]
+  };
 
-      <header className="sticky top-0 z-40 px-3 pt-3 sm:px-6 sm:pt-4">
-        <div className="glass-tech mx-auto flex max-w-7xl items-center justify-between gap-3 rounded-[24px] px-3 py-3 sm:rounded-[28px] sm:px-6 sm:py-4">
+  return (
+    <div className="relative min-h-screen overflow-x-hidden bg-surface dark:bg-background">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          NAVBAR
+          Sticky, glass, icon+label pill
+          Mobile: hamburger drawer kiri
+      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <header
+        className={`sticky top-0 z-40 border-b bg-white/95 backdrop-blur-md transition-shadow duration-200 dark:bg-slate-950/95 dark:border-slate-800 ${
+          scrolled ? "shadow-card border-slate-200 dark:border-slate-800" : "border-transparent"
+        }`}
+      >
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-3.5">
           <BrandMark />
 
-          <nav className="hidden items-center gap-2 lg:flex">
-            {[ 
-              { href: "#beranda", label: "Beranda" },
-              { href: "#insight", label: "Insight" },
-              { href: "#jurusan", label: "Jurusan" },
-              { href: "#login", label: "Login" },
-            ].map((item) => (
+          {/* Desktop nav */}
+          <nav className="hidden items-center gap-1 lg:flex" aria-label="Navigasi utama">
+            {navItems.map((item) => (
               <a
                 key={item.href}
                 href={item.href}
-                className="rounded-2xl px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-primary dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                className="nav-underline flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-navy-50 hover:text-navy dark:text-slate-300 dark:hover:bg-navy/20 dark:hover:text-white"
+                style={{ minHeight: 44 }}
               >
+                <item.icon size={15} aria-hidden="true" />
                 {item.label}
               </a>
             ))}
@@ -130,188 +195,274 @@ export default function HomePage() {
           <div className="flex shrink-0 items-center gap-2">
             <ThemeToggle />
             <Link href="/login/siswa" className="hidden sm:block">
-              <Button variant="secondary">
-                Login Siswa
-                <ArrowRight size={16} />
+              <Button
+                variant="secondary"
+                className="bg-teal hover:bg-teal-600 text-white border-0"
+                size="sm"
+              >
+                <LogIn size={15} />
+                Login
               </Button>
             </Link>
+            {/* Hamburger — mobile */}
+            <button
+              onClick={() => setMobileMenuOpen((prev) => !prev)}
+              aria-label={mobileMenuOpen ? "Tutup menu" : "Buka menu"}
+              aria-expanded={mobileMenuOpen}
+              className="rounded-xl p-2.5 text-slate-600 transition-colors hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-800 lg:hidden"
+              style={{ minHeight: 44, minWidth: 44 }}
+            >
+              {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile drawer overlay */}
+        {mobileMenuOpen && (
+          <>
+            <div
+              className="fixed inset-0 top-[60px] z-30 bg-navy/40 backdrop-blur-sm lg:hidden"
+              onClick={() => setMobileMenuOpen(false)}
+              aria-hidden="true"
+            />
+            <nav
+              className="absolute left-0 right-0 top-full z-40 border-b border-slate-200 bg-white dark:bg-slate-900 px-4 pb-4 pt-2 shadow-panel lg:hidden dark:bg-slate-950 dark:border-slate-800"
+              aria-label="Navigasi mobile"
+            >
+              {navItems.map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-navy-50 hover:text-navy dark:text-slate-200 dark:hover:bg-navy/20"
+                  style={{ minHeight: 44 }}
+                >
+                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-navy-50 text-navy dark:bg-navy/20 dark:text-navy-200">
+                    <item.icon size={18} aria-hidden="true" />
+                  </span>
+                  {item.label}
+                </a>
+              ))}
+              <Link href="/login/siswa" className="mt-2 block w-full" onClick={() => setMobileMenuOpen(false)}>
+                <Button className="w-full bg-teal hover:bg-teal-600 text-white border-0">
+                  <LogIn size={16} />
+                  Login Siswa
+                </Button>
+              </Link>
+            </nav>
+          </>
+        )}
       </header>
 
-      <main className="px-3 pb-8 pt-4 sm:px-6 sm:pb-10 sm:pt-6">
-        <section id="beranda" className="mx-auto grid max-w-7xl gap-5 lg:grid-cols-[1.15fr_0.85fr] lg:gap-8">
-          <div className="panel-surface network-shell p-5 sm:p-8 lg:p-10">
-            <div className="section-badge">
-              <Network size={14} />
-              Portal Sekolah Terhubung
-            </div>
-            <h1 className="mt-4 max-w-4xl text-balance text-3xl font-bold leading-tight text-slate-900 sm:mt-5 sm:text-5xl sm:leading-[0.95] lg:text-6xl dark:text-white">
-              Ruang belajar digital untuk{" "}
-              <span className="text-gradient-network">siswa dan guru yang lebih terhubung</span>
-            </h1>
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600 sm:mt-5 sm:text-base sm:leading-8 dark:text-slate-300">
-              ZonaVetsa membantu kegiatan pembelajaran menjadi lebih rapi dan mudah diakses melalui
-              materi, tugas, absensi, ujian, dan informasi kelas dalam satu portal sekolah.
-            </p>
+      <main className="overflow-x-hidden">
+        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            HERO SECTION
+            headline 4xl mobile / 6xl desktop
+            2 CTA button sejajar
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+        <section id="beranda" className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:py-20">
+          <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:gap-12">
 
-            <div className="mt-6 grid gap-3 sm:mt-8 sm:flex sm:flex-wrap">
-              <Link href="/login/siswa" className="w-full sm:w-auto">
-                <Button size="lg" variant="secondary" className="w-full sm:w-auto">
-                  Login Siswa
-                  <ArrowRight size={18} />
-                </Button>
-              </Link>
-              <Link href="/login/guru" className="w-full sm:w-auto">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto">
-                  Login Guru
-                </Button>
-              </Link>
-            </div>
+            {/* Kiri — Hero text */}
+            <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 p-7 shadow-card sm:p-10 dark:bg-card dark:border-slate-800">
+              <div className="section-badge w-fit">
+                <GraduationCap size={13} />
+                Portal Digital Sekolah
+              </div>
 
-            <div className="mt-8 grid gap-4 sm:mt-10 sm:grid-cols-3">
-              {[
-                { icon: Wifi, title: "Realtime Signal", text: "Notifikasi dan sesi penting langsung sinkron tanpa terasa kaku." },
-                { icon: ShieldCheck, title: "Friendly Control", text: "Hierarki visual lebih jelas untuk siswa, guru, dan admin." },
-                { icon: Activity, title: "Modern Motion", text: "Animasi ringan yang terasa hidup tanpa mengganggu fokus." },
-              ].map((item) => (
-                <div key={item.title} className="card-tech p-5">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-100 to-cyan-100 text-primary dark:from-sky-500/20 dark:to-cyan-500/20 dark:text-cyan-200">
-                    <item.icon size={20} />
+              <h1 className="mt-5 text-balance text-4xl font-bold leading-tight text-navy dark:text-white sm:text-5xl lg:text-6xl">
+                Ruang belajar digital untuk{" "}
+                <span className="text-gradient">siswa dan guru</span>
+              </h1>
+
+              <p className="mt-4 max-w-xl text-sm leading-7 text-slate-600 dark:text-slate-300 sm:text-base">
+                Materi, tugas, absensi, ujian, dan informasi kelas dalam satu portal sekolah yang rapi dan mudah diakses.
+              </p>
+
+              {/* ━━ 2 CTA sejajar ━━ */}
+              <div className="mt-8 flex flex-row gap-3">
+                <Link href="/login/siswa">
+                  <Button
+                    size="lg"
+                    className="bg-navy hover:bg-navy-700 text-white border-0 px-6"
+                  >
+                    <LogIn size={18} aria-hidden="true" />
+                    Login Siswa
+                  </Button>
+                </Link>
+                <Link href="/login/guru">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="border-navy text-navy hover:bg-navy-50 px-6 dark:border-slate-600 dark:text-white dark:hover:bg-slate-800"
+                  >
+                    Login Guru
+                  </Button>
+                </Link>
+              </div>
+
+              {/* Features mini grid */}
+              <div className="mt-9 grid gap-4 sm:grid-cols-3">
+                {[
+                  { icon: BookOpen, title: "E-Learning", text: "Materi dan tugas digital dari guru langsung ke siswa." },
+                  { icon: UserCheck, title: "QR Absensi", text: "Scan cepat absensi dengan kode QR real-time." },
+                  { icon: BookMarked, title: "Ujian Online", text: "Ujian terjadwal dengan skor otomatis dan rekap nilai." },
+                ].map((item) => (
+                  <div key={item.title} className="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal/10 text-teal dark:bg-teal/20">
+                      <item.icon size={20} aria-hidden="true" />
+                    </div>
+                    <h3 className="mt-3 text-sm font-bold text-navy dark:text-white">{item.title}</h3>
+                    <p className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{item.text}</p>
                   </div>
-                  <h3 className="mt-4 text-lg font-semibold text-slate-900 dark:text-white">{item.title}</h3>
-                  <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">{item.text}</p>
+                ))}
+              </div>
+            </div>
+
+            {/* Kanan — Stats + Login card */}
+            <div className="space-y-5">
+              {/* Stat cards */}
+              <div className="rounded-3xl border border-slate-200/80 bg-white dark:bg-slate-900 p-5 shadow-card dark:bg-card dark:border-slate-800 sm:p-6">
+                <div className="mb-5 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-teal dark:text-teal-400">
+                      Data Sekolah
+                    </p>
+                    <h2 className="mt-1 text-xl font-bold text-navy dark:text-white">
+                      Statistik Sekolah
+                    </h2>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  {statsCards.map((item) => (
+                    <div
+                      key={item.label}
+                      className="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900"
+                    >
+                      <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${item.color}`}>
+                        <item.icon size={20} aria-hidden="true" />
+                      </div>
+                      {/* Skeleton bila data belum load */}
+                      {statsLoading ? (
+                        <div className="skeleton mt-3 h-8 w-3/4 rounded-lg" />
+                      ) : (
+                        <p className="mt-3 text-3xl font-bold text-navy dark:text-white">
+                          {item.value ?? 0}
+                        </p>
+                      )}
+                      <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                        {item.label}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Login card */}
+              <div id="login" className="rounded-3xl border border-slate-200/80 bg-white dark:bg-slate-900 p-5 shadow-card dark:bg-card dark:border-slate-800 sm:p-6">
+                <div className="section-badge mb-4 w-fit">
+                  <LogIn size={13} />
+                  Portal Login
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {[
+                    { href: "/login/siswa", title: "Login Siswa", desc: "Belajar, tugas, ujian & absensi" },
+                    { href: "/login/guru", title: "Login Guru", desc: "Kelola kelas, materi & QR scan" },
+                  ].map((item) => (
+                    <Link key={item.href} href={item.href} className="group">
+                      <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-teal hover:bg-teal-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-teal dark:hover:bg-teal/10">
+                        <div>
+                          <p className="font-bold text-navy dark:text-white">{item.title}</p>
+                          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{item.desc}</p>
+                        </div>
+                        <ChevronRight
+                          size={18}
+                          className="shrink-0 text-slate-400 transition-transform group-hover:translate-x-1 group-hover:text-teal"
+                          aria-hidden="true"
+                        />
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            INSIGHT BANNER — tipis 1 baris
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+        <section id="insight" className="border-y border-amber-200/60 bg-amber-50 dark:border-amber-500/20 dark:bg-amber-500/5">
+          <div className="mx-auto flex max-w-7xl items-center gap-3 overflow-hidden px-4 py-3 sm:px-6">
+            <span className="flex shrink-0 h-7 w-7 items-center justify-center rounded-full bg-amber text-white">
+              <Lightbulb size={14} aria-hidden="true" />
+            </span>
+            <p className="truncate text-sm font-medium text-amber-800 dark:text-amber-200">
+              <strong>Insight:</strong> {dailyInsight}
+            </p>
+          </div>
+        </section>
+
+        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            JURUSAN — grid 2 kolom mobile / 3 desktop
+            Warna unik per jurusan, icon besar
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+        <section id="jurusan" className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
+          <div className="mb-8 text-center sm:text-left">
+            <div className="section-badge mb-4 sm:w-fit">
+              <GraduationCap size={13} />
+              Program Keahlian
+            </div>
+            <h2 className="text-3xl font-bold text-navy dark:text-white sm:text-4xl lg:text-5xl">
+              Jurusan Unggulan
+            </h2>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300 sm:text-base">
+              SMK Veteran 1 Sukoharjo memiliki 6 program keahlian siap kerja dengan kurikulum berbasis teknologi dan industri terkini.
+            </p>
+          </div>
+
+          {majors.length === 0 ? (
+            /* Skeleton grid saat data belum tersedia */
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="rounded-2xl border border-slate-200 bg-white dark:bg-slate-900 p-5 dark:border-slate-800 dark:bg-card">
+                  <div className="skeleton h-14 w-14 rounded-2xl" />
+                  <div className="skeleton mt-4 h-5 w-3/4 rounded-lg" />
+                  <div className="skeleton mt-2 h-4 w-full rounded-lg" />
+                  <div className="skeleton mt-1.5 h-4 w-4/5 rounded-lg" />
                 </div>
               ))}
             </div>
-          </div>
-
-          <div className="space-y-6">
-            <div className="panel-surface p-5 sm:p-6">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.22em] text-sky-600 dark:text-sky-300">
-                    Education Grid
-                  </p>
-                  <h2 className="mt-2 text-xl font-bold text-slate-900 sm:text-2xl dark:text-white">Statistik Sekolah</h2>
-                </div>
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-cyber text-white shadow-soft-signal sm:h-14 sm:w-14 sm:rounded-3xl">
-                  <BrainCircuit size={24} />
-                </div>
-              </div>
-
-              <div className="mt-6 grid grid-cols-2 gap-4">
-                {statsCards.map((item) => (
-                  <div key={item.label} className="card-tech p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-50 text-primary dark:bg-slate-900 dark:text-sky-300">
-                        <item.icon size={18} />
-                      </div>
-                      <span className="chip-signal px-2.5 py-1">{item.label}</span>
-                    </div>
-                    <p className="mt-4 text-3xl font-bold text-slate-900 dark:text-white">{item.value}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div id="login" className="panel-surface p-5 sm:p-6">
-              <p className="section-badge w-fit">
-                <ShieldCheck size={14} />
-                Portal Login
-              </p>
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                {[
-                  { href: "/login/siswa", title: "Login Siswa", desc: "Masuk ke dashboard belajar, tugas, absensi, dan ujian." },
-                  { href: "/login/guru", title: "Login Guru", desc: "Kelola kelas, absensi QR, ujian, tugas, dan file." },
-                ].map((item) => (
-                  <Link key={item.href} href={item.href} className="group">
-                    <div className="rounded-[24px] border border-slate-200/80 bg-white/80 px-5 py-5 transition hover:-translate-y-0.5 hover:border-sky-300 hover:bg-sky-50/70 dark:border-slate-800 dark:bg-slate-950/60 dark:hover:border-sky-700 dark:hover:bg-slate-900">
-                      <div className="flex items-center justify-between gap-4">
-                        <div>
-                          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{item.title}</h3>
-                          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{item.desc}</p>
-                        </div>
-                        <ArrowRight className="text-slate-400 transition group-hover:translate-x-1 group-hover:text-primary" size={18} />
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="insight" className="mx-auto mt-5 max-w-7xl sm:mt-8">
-          <div className="panel-surface p-5 sm:p-8 lg:p-10">
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <div className="section-badge">
-                  <Activity size={14} />
-                  Insight Hari Ini
-                </div>
-                <h2 className="mt-4 text-2xl font-bold text-slate-900 sm:text-3xl lg:text-4xl dark:text-white">
-                  Kalimat harian tentang pembelajaran dan teknologi
-                </h2>
-              </div>
-            </div>
-
-            <div className="mt-6 rounded-[24px] border border-slate-200/80 bg-[linear-gradient(135deg,_rgba(255,255,255,0.95),_rgba(237,244,255,0.9))] p-5 shadow-sm sm:mt-8 sm:rounded-[30px] sm:p-8 dark:border-slate-800 dark:bg-[linear-gradient(135deg,_rgba(15,23,42,0.92),_rgba(30,41,59,0.88))]">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-cyber text-white shadow-soft-signal sm:h-14 sm:w-14 sm:rounded-3xl">
-                  <BrainCircuit size={24} />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-sky-600 dark:text-sky-300">
-                    Pesan Harian
-                  </p>
-                  <blockquote className="mt-3 max-w-4xl text-xl font-semibold leading-relaxed text-slate-900 sm:text-2xl lg:text-3xl dark:text-white">
-                    "{dailyInsight}"
-                  </blockquote>
-                  <p className="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                    Pesan ini berganti otomatis setiap hari untuk menghadirkan nuansa belajar yang segar
-                    di halaman utama.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="jurusan" className="mx-auto mt-5 max-w-7xl sm:mt-8">
-          <div className="panel-surface p-5 sm:p-8 lg:p-10">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <div className="section-badge">
-                  <BookOpen size={14} />
-                  Program Keahlian
-                </div>
-                <h2 className="mt-4 text-2xl font-bold text-slate-900 sm:text-3xl lg:text-4xl dark:text-white">
-                  Jurusan tampil lebih jelas, lebih modern, dan lebih tech-forward
-                </h2>
-              </div>
-              <p className="max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-                Kartu jurusan sekarang membawa identitas visual yang lebih kuat, cocok untuk sekolah vokasi
-                dengan karakter teknologi, produksi, dan sistem jaringan.
-              </p>
-            </div>
-
-            <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-              {majors.map((major) => {
+          ) : (
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+              {majors.map((major, idx) => {
                 const Icon = iconMap[major.icon] || BookOpen;
+                const color = majorColors[idx % majorColors.length];
                 return (
-                  <article key={major.id} className="card-tech p-6">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-gradient-to-br from-primary to-cyber text-white shadow-soft-signal">
-                        <Icon size={24} />
-                      </div>
-                      <span className="chip-signal">{major.skills?.length || 0} skill</span>
+                  <article
+                    key={major.id}
+                    className={`group rounded-2xl border p-5 transition-all duration-200 hover:-translate-y-1 hover:shadow-card-hover ${color.bg} ${color.border} dark:bg-slate-900/60 dark:border-slate-800`}
+                  >
+                    {/* Icon besar */}
+                    <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${color.icon} shadow-card`}>
+                      <Icon size={24} aria-hidden="true" />
                     </div>
-                    <h3 className="mt-5 text-xl font-bold text-slate-900 dark:text-white">{major.name}</h3>
-                    <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">{major.description}</p>
-                    <div className="mt-5 flex flex-wrap gap-2">
+
+                    <h3 className="mt-4 text-base font-bold leading-snug text-navy dark:text-white sm:text-lg">
+                      {major.name}
+                    </h3>
+                    <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-slate-600 dark:text-slate-400 sm:text-sm">
+                      {major.description}
+                    </p>
+
+                    {/* Skills badges */}
+                    <div className="mt-4 flex flex-wrap gap-1.5">
                       {(major.skills || []).slice(0, 3).map((skill) => (
-                        <span key={skill} className="chip-signal">
+                        <span
+                          key={skill}
+                          className="inline-flex items-center rounded-full bg-white/70 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                        >
                           {skill}
                         </span>
                       ))}
@@ -320,9 +471,23 @@ export default function HomePage() {
                 );
               })}
             </div>
-          </div>
+          )}
         </section>
       </main>
+
+      {/* ━━ Footer minimal ━━ */}
+      <footer className="border-t border-slate-200 bg-white dark:bg-slate-900 py-6 dark:border-slate-800 dark:bg-slate-950">
+        <div className="mx-auto flex max-w-7xl flex-col items-center gap-3 px-4 text-center sm:flex-row sm:justify-between sm:text-left">
+          <BrandMark />
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-xs text-slate-400 dark:text-slate-500">
+            <p>© {new Date().getFullYear()} SMK Veteran 1 Sukoharjo. Portal Digital Resmi.</p>
+            <span className="hidden sm:inline">•</span>
+            <Link href="/changelog" className="hover:text-teal transition-colors">
+              Catatan Rilis (Changelog)
+            </Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

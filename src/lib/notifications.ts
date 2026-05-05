@@ -360,3 +360,47 @@ export async function notifyPortfolioUpload(
     link: "/dashboard/guru/portofolio",
   });
 }
+
+export async function notifyAnnouncementToStudents(params: {
+  announcementTitle: string;
+  announcementContent: string;
+  senderKode: string;
+  senderRole: "guru" | "admin";
+  senderName: string;
+  targetClassIds?: string[];
+}) {
+  const supabase = createClient();
+  const store = useNotificationStore.getState();
+
+  const { data: students } = await supabase
+    .from("students")
+    .select("nis, class_id, last_class_id");
+
+  if (!students || students.length === 0) return;
+
+  const targetClassIds = (params.targetClassIds || []).filter(Boolean);
+  const targetedStudents =
+    targetClassIds.length === 0
+      ? students
+      : students.filter((student: { nis: string; class_id?: string | null; last_class_id?: string | null }) => {
+          const studentClassId = student.last_class_id || student.class_id || "";
+          return !!studentClassId && targetClassIds.includes(studentClassId);
+        });
+
+  if (targetedStudents.length === 0) return;
+
+  await store.sendToMultiple(
+    targetedStudents.map((student: { nis: string }) => student.nis),
+    "siswa",
+    {
+      sender_kode: params.senderKode,
+      sender_role: params.senderRole,
+      sender_name: params.senderName,
+      type: "announcement",
+      priority: "high",
+      title: params.announcementTitle,
+      message: `${params.senderName} mengirim pengumuman baru.${params.announcementContent ? ` ${params.announcementContent.slice(0, 140)}${params.announcementContent.length > 140 ? "..." : ""}` : ""}`.trim(),
+      link: "/dashboard/siswa/pengumuman",
+    }
+  );
+}

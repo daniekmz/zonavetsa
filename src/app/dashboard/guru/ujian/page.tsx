@@ -11,7 +11,7 @@ import { Avatar } from "@/components/avatar";
 import { notifyExam } from "@/lib/notifications";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 import {
   Dialog,
   DialogContent,
@@ -33,6 +33,7 @@ import {
   encodeExamTargetClassIds,
   formatDurationLabel,
   parseExamTargetClassIds,
+  calculateExamSubmission,
 } from "@/lib/exam-utils";
 
 interface ExamFormData {
@@ -87,6 +88,7 @@ export default function GuruUjianPage() {
   const [gradingSubmission, setGradingSubmission] = useState<{ sessionId: string; questionId: string; answer: string; currentGrade?: string } | null>(null);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isClassPickerOpen, setIsClassPickerOpen] = useState(false);
+  const [expandedActionExamId, setExpandedActionExamId] = useState<string | null>(null);
   const [importPreview, setImportPreview] = useState<any[]>([]);
   const [formData, setFormData] = useState<ExamFormData>({
     title: "",
@@ -391,6 +393,19 @@ export default function GuruUjianPage() {
   const gradeEssayAnswer = async (answerId: string, points: number, feedback: string) => {
     const supabase = createClient();
     
+    // 1. Get the answer details
+    const { data: answerData } = await supabase
+      .from("exam_answers")
+      .select("session_id, question_id")
+      .eq("id", answerId)
+      .single();
+
+    if (!answerData) {
+      toast("Data jawaban tidak ditemukan", "error");
+      return;
+    }
+
+    // 2. Update the essay answer
     const { error } = await supabase
       .from("exam_answers")
       .update({
@@ -402,12 +417,72 @@ export default function GuruUjianPage() {
     
     if (error) {
       toast("Gagal menyimpan nilai", "error");
-    } else {
-      toast("Nilai berhasil disimpan", "success");
-      // Reload essay answers
-      if (selectedExam) {
-        loadEssayAnswers(selectedExam.id);
+      return;
+    }
+
+    // 3. Recalculate student score
+    const { data: sessionData } = await supabase
+      .from("exam_sessions")
+      .select("exam_id, student_nis")
+      .eq("id", answerData.session_id)
+      .single();
+
+    if (sessionData) {
+      // Fetch all answers for the session
+      const { data: allAnswers } = await supabase
+        .from("exam_answers")
+        .select("question_id, answer, points_earned")
+        .eq("session_id", answerData.session_id);
+
+      // Fetch the old score
+      const { data: oldScoreData } = await supabase
+        .from("exam_scores")
+        .select("score")
+        .eq("exam_id", sessionData.exam_id)
+        .eq("student_nis", sessionData.student_nis)
+        .single();
+      
+      const oldScore = oldScoreData?.score || 0;
+
+      // Fetch all questions for the exam
+      const { data: questions } = await supabase
+        .from("exam_questions")
+        .select("*")
+        .eq("exam_id", sessionData.exam_id);
+
+      // Build records for calculation
+      const answersRecord: Record<string, string> = {};
+      const gradedEssayPoints: Record<string, number> = {};
+      
+      (allAnswers || []).forEach(a => {
+          answersRecord[a.question_id] = a.answer || "";
+          if (a.points_earned !== null && a.points_earned !== undefined) {
+             gradedEssayPoints[a.question_id] = a.points_earned;
+          }
+      });
+
+      // Recalculate
+      const summary = calculateExamSubmission(questions || [], answersRecord, gradedEssayPoints);
+
+      // Update exam_scores
+      await supabase.from("exam_scores").update({
+         score: summary.scorePercentage,
+         earned_points: summary.earnedPoints
+      }).eq("exam_id", sessionData.exam_id).eq("student_nis", sessionData.student_nis);
+
+      // Update student points leaderboard
+      const scoreDiff = summary.scorePercentage - oldScore;
+      if (scoreDiff !== 0) {
+         await supabase.rpc("increment_points", { s_nis: sessionData.student_nis, amount: scoreDiff });
       }
+    }
+
+    toast("Nilai berhasil disimpan & poin siswa diupdate", "success");
+    
+    // Reload essay answers and modal data
+    if (selectedExam) {
+      loadEssayAnswers(selectedExam.id);
+      openResultsModal(selectedExam); // Refresh score table if open
     }
   };
 
@@ -485,7 +560,7 @@ export default function GuruUjianPage() {
       (score.score || 0) >= passingScore ? "LULUS" : "TIDAK LULUS",
     ]);
 
-    (doc as any).autoTable({
+    autoTable(doc, {
       startY: 46,
       head: [["No", "NIS", "Nama", "Nilai", "Poin", "Status"]],
       body: tableData,
@@ -882,22 +957,22 @@ export default function GuruUjianPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-3xl bg-[radial-gradient(circle_at_top_left,_rgba(0,43,91,0.12),_transparent_42%),linear-gradient(135deg,_#ffffff,_#edf4ff)] p-6 shadow-sm">
+      <section className="rounded-3xl bg-[radial-gradient(circle_at_top_left,_rgba(0,43,91,0.12),_transparent_42%),linear-gradient(135deg,_#ffffff,_#edf4ff)] dark:bg-none dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl space-y-3">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/80 dark:bg-slate-900/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
               <Sparkles size={14} />
               Exam Studio
             </div>
             <div>
               <h2 className="text-3xl font-bold text-primary">Manajemen ujian guru</h2>
-              <p className="mt-2 text-sm text-slate-600">
+              <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
                 Pantau status publish, jumlah soal, submission siswa, dan rata-rata hasil dari satu
                 tampilan yang lebih cepat dipindai.
               </p>
             </div>
           </div>
-          <Button onClick={() => openModal()} className="bg-success hover:bg-success/90">
+          <Button onClick={() => openModal()} className="h-12 px-6 text-base font-semibold bg-success hover:bg-success/90">
             <Plus size={18} />
             Ujian Baru
           </Button>
@@ -912,7 +987,7 @@ export default function GuruUjianPage() {
         </div>
       </section>
 
-      <section className="rounded-2xl bg-white p-4 shadow-sm">
+      <section className="rounded-2xl bg-white dark:bg-slate-900 p-4 shadow-sm">
         <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_240px]">
           <div className="relative">
             <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -943,21 +1018,21 @@ export default function GuruUjianPage() {
       {isLoading ? (
         <div className="grid gap-4 lg:grid-cols-2">
           {[...Array(4)].map((_, index) => (
-            <div key={index} className="rounded-2xl bg-white p-6 shadow-sm">
-              <div className="h-5 w-1/2 animate-pulse rounded bg-slate-200" />
-              <div className="mt-4 h-4 w-4/5 animate-pulse rounded bg-slate-200" />
-              <div className="mt-6 h-24 animate-pulse rounded-2xl bg-slate-100" />
+            <div key={index} className="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm">
+              <div className="h-5 w-1/2 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
+              <div className="mt-4 h-4 w-4/5 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
+              <div className="mt-6 h-24 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-800" />
             </div>
           ))}
         </div>
       ) : filteredExams.length === 0 ? (
-        <div className="bg-white rounded-xl p-12 text-center shadow-sm">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-12 text-center shadow-sm">
           <ClipboardList size={48} className="mx-auto mb-3 opacity-50" />
-          <h3 className="text-lg font-semibold text-gray-700 mb-2">
+          <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-2">
             Belum Ada Ujian
           </h3>
-          <p className="text-gray-500 mb-4">Buat ujian baru untuk siswa</p>
-          <Button onClick={() => openModal()} className="bg-success hover:bg-success/90">
+          <p className="text-slate-500 dark:text-slate-400 mb-4">Buat ujian baru untuk siswa</p>
+          <Button onClick={() => openModal()} className="h-12 px-6 text-base font-semibold bg-success hover:bg-success/90">
             <Plus size={18} />
             Buat Ujian
           </Button>
@@ -973,27 +1048,27 @@ export default function GuruUjianPage() {
             return (
               <article
                 key={exam.id}
-                className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md"
+                className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-3">
                     <span
                       className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
-                        exam.status === "published" ? "bg-success/10 text-success" : "bg-slate-100 text-slate-600"
+                        exam.status === "published" ? "bg-success/10 text-success" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
                       }`}
                     >
                       {exam.status === "published" ? "Published" : "Draft"}
                     </span>
                     <div>
-                      <h3 className="text-xl font-bold text-slate-900">{exam.title}</h3>
-                      <p className="mt-2 text-sm leading-relaxed text-slate-500">
+                      <h3 className="text-xl font-bold text-slate-900 dark:text-white">{exam.title}</h3>
+                      <p className="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
                         {exam.description || "Belum ada deskripsi tambahan untuk ujian ini."}
                       </p>
                     </div>
                   </div>
-                  <div className="rounded-2xl bg-slate-50 px-4 py-3 text-right">
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Rata-rata</p>
-                    <p className="mt-2 text-xl font-bold text-slate-900">{currentAverage}/100</p>
+                  <div className="rounded-2xl bg-slate-50 dark:bg-slate-800 px-4 py-3 text-right">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Rata-rata</p>
+                    <p className="mt-2 text-xl font-bold text-slate-900 dark:text-white">{currentAverage}/100</p>
                   </div>
                 </div>
 
@@ -1004,32 +1079,57 @@ export default function GuruUjianPage() {
                   <MetricTile icon={Target} label="Submission" value={`${currentSubmissionCount}`} />
                 </div>
 
-                <div className="mt-6 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
-                  <ActionChip onClick={() => openQuestionsModal(exam)} icon={FileText} label="Kelola Soal" />
-                  <ActionChip
-                    onClick={() => {
-                      openResultsModal(exam);
-                      loadEssayAnswers(exam.id);
-                    }}
-                    icon={CheckCircle}
-                    label="Hasil"
-                  />
-                  <ActionChip
-                    onClick={() => {
-                      setSelectedExam(exam);
-                      loadEssayAnswers(exam.id);
-                      setIsResultsModalOpen(true);
-                    }}
-                    icon={BarChart3}
-                    label="Koreksi Essay"
-                  />
-                  <ActionChip
-                    onClick={() => handleToggleStatus(exam)}
-                    icon={exam.status === "published" ? EyeOff : Eye}
-                    label={exam.status === "published" ? "Set Draft" : "Publish"}
-                  />
-                  <ActionChip onClick={() => openModal(exam)} icon={Edit2} label="Edit" />
-                  <ActionChip onClick={() => handleDelete(exam)} icon={Trash2} label="Hapus" tone="danger" />
+                <div className="mt-6 space-y-3 border-t border-slate-100 dark:border-slate-800 pt-4">
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                      Aksi Cepat
+                    </span>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    <ActionChip onClick={() => openQuestionsModal(exam)} icon={FileText} label="Kelola Soal" fullWidth />
+                    <ActionChip
+                      onClick={() => {
+                        openResultsModal(exam);
+                        loadEssayAnswers(exam.id);
+                      }}
+                      icon={CheckCircle}
+                      label="Lihat Hasil"
+                      fullWidth
+                    />
+                    <ActionChip
+                      onClick={() => handleToggleStatus(exam)}
+                      icon={exam.status === "published" ? EyeOff : Eye}
+                      label={exam.status === "published" ? "Set Draft" : "Publish Ujian"}
+                      fullWidth
+                    />
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    <ActionChip
+                      onClick={() =>
+                        setExpandedActionExamId((prev) => (prev === exam.id ? null : exam.id))
+                      }
+                      icon={ChevronDown}
+                      label={expandedActionExamId === exam.id ? "Sembunyikan Fungsi Lain" : "Fungsi Lain"}
+                      tone="muted"
+                      fullWidth
+                    />
+                    {expandedActionExamId === exam.id && (
+                      <>
+                        <ActionChip
+                          onClick={() => {
+                            setSelectedExam(exam);
+                            loadEssayAnswers(exam.id);
+                            setIsResultsModalOpen(true);
+                          }}
+                          icon={BarChart3}
+                          label="Koreksi Essay"
+                          fullWidth
+                        />
+                        <ActionChip onClick={() => openModal(exam)} icon={Edit2} label="Edit Ujian" fullWidth />
+                        <ActionChip onClick={() => handleDelete(exam)} icon={Trash2} label="Hapus Ujian" tone="danger" fullWidth />
+                      </>
+                    )}
+                  </div>
                 </div>
               </article>
             );
@@ -1080,15 +1180,15 @@ export default function GuruUjianPage() {
                 </button>
 
                 {isClassPickerOpen && (
-                  <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-                    <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                  <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-sm">
+                    <div className="flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
                       <button
                         type="button"
                         onClick={() => toggleTargetClass(ALL_CLASSES_VALUE)}
                         className={`flex flex-1 items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors ${
                           selectedTargetClassIds.includes(ALL_CLASSES_VALUE)
                             ? "bg-primary/10 text-primary"
-                            : "bg-slate-50 text-slate-700 hover:bg-slate-100"
+                            : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-800"
                         }`}
                       >
                         <span>Semua Kelas</span>
@@ -1119,7 +1219,7 @@ export default function GuruUjianPage() {
                             className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors ${
                               isChecked
                                 ? "bg-sky-50 text-sky-900"
-                                : "bg-slate-50 text-slate-700 hover:bg-slate-100"
+                                : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-800"
                             }`}
                           >
                             <span>{cls.name}</span>
@@ -1137,7 +1237,7 @@ export default function GuruUjianPage() {
                 )}
 
                 {formData.class_id && (
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     Target: {getTargetClassNames(formData.class_id).join(", ")}
                   </p>
                 )}
@@ -1183,7 +1283,7 @@ export default function GuruUjianPage() {
                 value={formData.instructions || ""}
                 onChange={(e) => setFormData({ ...formData, instructions: e.target.value })}
                 placeholder="Petunjuk untuk siswa..."
-                className="w-full min-h-[80px] px-3 py-2 border rounded-md"
+                className="w-full min-h-[80px] px-3 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
 
@@ -1237,11 +1337,11 @@ export default function GuruUjianPage() {
               </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" className="h-11 px-5" onClick={() => setIsModalOpen(false)}>
               Batal
             </Button>
-            <Button onClick={handleSave} className="bg-success hover:bg-success/90">
+            <Button onClick={handleSave} className="h-11 px-5 text-base font-semibold bg-success hover:bg-success/90">
               {editingExam ? "Update" : "Buat"}
             </Button>
           </DialogFooter>
@@ -1260,7 +1360,7 @@ export default function GuruUjianPage() {
             {isQuestionsLoading ? (
               <div className="text-center py-8">Memuat soal...</div>
             ) : questions.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-slate-500 dark:text-slate-400">
                 <FileText size={48} className="mx-auto mb-4 opacity-50" />
                 <p>Belum ada soal untuk ujian ini</p>
                 <p className="text-sm mt-2">Tambahkan soal di bawah</p>
@@ -1268,14 +1368,14 @@ export default function GuruUjianPage() {
             ) : (
               <div className="space-y-3">
                 {questions.map((q, idx) => (
-                  <div key={q.id} className="p-4 border rounded-lg bg-gray-50">
+                  <div key={q.id} className="p-4 border rounded-lg bg-gray-50 dark:bg-slate-800">
                     <div className="flex justify-between items-start">
 <div className="flex-1">
                          <p className="font-medium">{idx + 1}. {q.question_text}</p>
                          {q.is_essay ? (
-                           <p className="text-xs text-gray-500 mt-1">Essay ({q.points} poin)</p>
+                           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Essay ({q.points} poin)</p>
                          ) : (
-                           <div className="text-xs text-gray-500 mt-1 space-x-2">
+                           <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 space-x-2">
                              <span>A: {q.option_a}</span>
                              <span>B: {q.option_b}</span>
                              <span>C: {q.option_c}</span>
@@ -1285,32 +1385,34 @@ export default function GuruUjianPage() {
                            </div>
                          )}
                        </div>
-                       <div className="flex gap-1">
-                         <Button
-                           variant="ghost"
-                           size="sm"
-                           onClick={() => openEditQuestionModal(q)}
-                           className="text-info"
-                         >
-                           <Edit2 size={14} />
-                         </Button>
-                         <Button
-                           variant="ghost"
-                           size="sm"
-                           onClick={() => deleteQuestion(q.id)}
-                           className="text-danger"
-                         >
-                           <Trash2 size={14} />
-                         </Button>
-                       </div>
-                    </div>
+                        <div className="flex flex-wrap items-center gap-2 pl-3">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openEditQuestionModal(q)}
+                            className="h-9 px-3 border-info/30 text-info hover:bg-info/5"
+                          >
+                            <Edit2 size={14} className="mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => deleteQuestion(q.id)}
+                            className="h-9 px-3 border-danger/30 text-danger hover:bg-danger/5"
+                          >
+                            <Trash2 size={14} className="mr-1" />
+                            Hapus
+                          </Button>
+                        </div>
+                     </div>
                   </div>
                 ))}
               </div>
             )}
           </div>
           <DialogFooter className="p-4 border-t">
-            <div className="flex gap-2 w-full">
+            <div className="grid gap-2 w-full sm:grid-cols-3">
               <input
                 ref={importInputRef}
                 type="file"
@@ -1318,16 +1420,16 @@ export default function GuruUjianPage() {
                 onChange={handleFileImport}
                 className="hidden"
               />
-              <Button variant="outline" onClick={downloadImportTemplate}>
+              <Button variant="outline" className="h-11 px-4" onClick={downloadImportTemplate}>
                 <Download size={16} className="mr-2" />
                 Download Template
               </Button>
-              <Button type="button" variant="outline" className="flex-1" onClick={triggerImportPicker}>
+              <Button type="button" variant="outline" className="h-11 px-4" onClick={triggerImportPicker}>
                 <Upload size={16} className="mr-2" />
                 Import Excel
               </Button>
-              <Button onClick={addNewQuestion} className="bg-success">
-                <Plus size={16} /> Tambah
+              <Button onClick={addNewQuestion} className="h-11 px-4 font-semibold bg-success">
+                <Plus size={16} className="mr-2" /> Tambah Soal
               </Button>
             </div>
           </DialogFooter>
@@ -1347,7 +1449,7 @@ export default function GuruUjianPage() {
                 <textarea
                   value={editingQuestion.question_text}
                   onChange={(e) => setEditingQuestion({ ...editingQuestion, question_text: e.target.value })}
-                  className="w-full min-h-[80px] px-3 py-2 border rounded-md"
+                  className="w-full min-h-[80px] px-3 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
               </div>
 
@@ -1431,14 +1533,14 @@ export default function GuruUjianPage() {
                 <textarea
                   value={editingQuestion.explanation || ""}
                   onChange={(e) => setEditingQuestion({ ...editingQuestion, explanation: e.target.value })}
-                  className="w-full min-h-[60px] px-3 py-2 border rounded-md"
+                  className="w-full min-h-[60px] px-3 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
                   placeholder="Penjelasan jawaban yang benar..."
                 />
               </div>
             </div>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditQuestionModalOpen(false)}>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" className="h-11 px-5" onClick={() => setIsEditQuestionModalOpen(false)}>
               Batal
             </Button>
             <Button
@@ -1448,7 +1550,7 @@ export default function GuruUjianPage() {
                   setIsEditQuestionModalOpen(false);
                 }
               }}
-              className="bg-success"
+              className="h-11 px-5 text-base font-semibold bg-success"
             >
               <Save size={16} className="mr-2" />
               Simpan Perubahan
@@ -1467,14 +1569,14 @@ export default function GuruUjianPage() {
             {isScoresLoading ? (
               <div className="text-center py-8">Memuat...</div>
             ) : examScores.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-slate-500 dark:text-slate-400">
                 <FileText size={48} className="mx-auto mb-4 opacity-50" />
                 <p>Belum ada siswa yang mengerjakan ujian ini</p>
               </div>
             ) : (
               <>
                 <div className="mb-4 flex justify-between items-center">
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-slate-600 dark:text-slate-300">
                     Total: {examScores.length} siswa | 
                     Rata-rata: {Math.round(examScores.reduce((sum, s) => sum + (s.score || 0), 0) / examScores.length)}%
                   </div>
@@ -1482,8 +1584,7 @@ export default function GuruUjianPage() {
                     <Button
                       onClick={exportToExcel}
                       variant="outline"
-                      size="sm"
-                      className="text-green-600 border-green-600 hover:bg-green-50"
+                      className="h-10 px-4 font-semibold text-green-600 border-green-600 hover:bg-green-50"
                     >
                       <Download size={16} className="mr-1" />
                       Excel
@@ -1491,8 +1592,7 @@ export default function GuruUjianPage() {
                     <Button
                       onClick={exportToPDF}
                       variant="outline"
-                      size="sm"
-                      className="text-red-600 border-red-600 hover:bg-red-50"
+                      className="h-10 px-4 font-semibold text-red-600 border-red-600 hover:bg-red-50"
                     >
                       <Download size={16} className="mr-1" />
                       PDF
@@ -1501,7 +1601,7 @@ export default function GuruUjianPage() {
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead className="bg-gray-50">
+                    <thead className="bg-gray-50 dark:bg-slate-800">
                       <tr>
                         <th className="px-3 py-2 text-left">No</th>
                         <th className="px-3 py-2 text-left">Foto</th>
@@ -1518,7 +1618,7 @@ export default function GuruUjianPage() {
                         const passingScore = selectedExam?.passing_score || 70;
                         const isPassed = (score.score || 0) >= passingScore;
                         return (
-                        <tr key={score.id} className="hover:bg-gray-50">
+                        <tr key={score.id} className="hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-800">
                           <td className="px-3 py-2">{idx + 1}</td>
                           <td className="px-3 py-2">
                             <Avatar src={score.student_avatar} name={score.student_name} size="sm" />
@@ -1559,11 +1659,11 @@ export default function GuruUjianPage() {
               <h3 className="font-semibold mb-4">Koreksi Jawaban Essay ({essayAnswers.length})</h3>
               <div className="space-y-4 max-h-64 overflow-y-auto">
                 {essayAnswers.map((answer, idx) => (
-                  <div key={answer.id} className="p-4 border rounded-lg bg-gray-50">
+                  <div key={answer.id} className="p-4 border rounded-lg bg-gray-50 dark:bg-slate-800">
                     <div className="flex justify-between items-start mb-2">
                       <div>
                         <p className="font-medium text-sm">{answer.student_nis} - {answer.student_name}</p>
-                        <p className="text-xs text-gray-500">Soal: {answer.question_text.substring(0, 60)}...</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Soal: {answer.question_text.substring(0, 60)}...</p>
                       </div>
                       <div className="text-right">
                         {answer.graded_at ? (
@@ -1575,7 +1675,7 @@ export default function GuruUjianPage() {
                         )}
                       </div>
                     </div>
-                    <div className="bg-white p-3 rounded text-sm mb-2">
+                    <div className="bg-white dark:bg-slate-900 p-3 rounded text-sm mb-2">
                       <strong>Jawaban:</strong> {answer.answer || "-"}
                     </div>
                     <div className="flex gap-2 items-center">
@@ -1604,7 +1704,7 @@ export default function GuruUjianPage() {
           )}
           
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsResultsModalOpen(false)}>Tutup</Button>
+            <Button variant="outline" className="h-10 px-5" onClick={() => setIsResultsModalOpen(false)}>Tutup</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1617,14 +1717,14 @@ export default function GuruUjianPage() {
           </DialogHeader>
           <div className="flex-1 overflow-y-auto p-4">
             {importPreview.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-slate-500 dark:text-slate-400">
                 <FileText size={48} className="mx-auto mb-4 opacity-50" />
                 <p>Tidak ada data untuk diimport</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-gray-50 dark:bg-slate-800">
                     <tr>
                       <th className="px-2 py-2 text-left">No</th>
                       <th className="px-2 py-2 text-left">Pertanyaan</th>
@@ -1639,7 +1739,7 @@ export default function GuruUjianPage() {
                   </thead>
                   <tbody className="divide-y">
                     {importPreview.map((q, idx) => (
-                      <tr key={idx} className="hover:bg-gray-50">
+                      <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-800">
                         <td className="px-2 py-2">{idx + 1}</td>
                         <td className="px-2 py-2 max-w-xs truncate" title={q.question_text}>
                           {q.question_text}
@@ -1654,7 +1754,7 @@ export default function GuruUjianPage() {
                           {q.is_essay ? (
                             <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">Yes</span>
                           ) : (
-                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">No</span>
+                            <span className="text-xs bg-gray-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-1 rounded">No</span>
                           )}
                         </td>
                       </tr>
@@ -1664,11 +1764,11 @@ export default function GuruUjianPage() {
               </div>
             )}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setIsImportModalOpen(false); setImportPreview([]); }}>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" className="h-11 px-5" onClick={() => { setIsImportModalOpen(false); setImportPreview([]); }}>
               Batal
             </Button>
-            <Button onClick={executeImport} className="bg-success" disabled={importPreview.length === 0}>
+            <Button onClick={executeImport} className="h-11 px-5 text-base font-semibold bg-success" disabled={importPreview.length === 0}>
               <Upload size={16} className="mr-2" />
               Import {importPreview.length} Soal
             </Button>
@@ -1689,12 +1789,12 @@ function SummaryTile({
   value: string;
 }) {
   return (
-    <div className="rounded-2xl bg-white/80 p-4 shadow-sm backdrop-blur">
+    <div className="rounded-2xl bg-white/80 dark:bg-slate-900/80 p-4 shadow-sm backdrop-blur">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</span>
+        <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{label}</span>
         <Icon size={16} className="text-primary" />
       </div>
-      <p className="mt-3 text-2xl font-bold text-slate-900">{value}</p>
+      <p className="mt-3 text-2xl font-bold text-slate-900 dark:text-white">{value}</p>
     </div>
   );
 }
@@ -1709,12 +1809,12 @@ function MetricTile({
   value: string;
 }) {
   return (
-    <div className="rounded-xl bg-slate-50 p-3">
-      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+    <div className="rounded-xl bg-slate-50 dark:bg-slate-800 p-3">
+      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
         <Icon size={14} />
         {label}
       </div>
-      <p className="mt-2 text-sm font-semibold text-slate-800">{value}</p>
+      <p className="mt-2 text-sm font-semibold text-slate-800 dark:text-slate-100">{value}</p>
     </div>
   );
 }
@@ -1724,22 +1824,28 @@ function ActionChip({
   icon: Icon,
   label,
   tone = "default",
+  fullWidth = false,
 }: {
   onClick: () => void;
   icon: React.ElementType;
   label: string;
-  tone?: "default" | "danger";
+  tone?: "default" | "danger" | "muted";
+  fullWidth?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
-      className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition-colors ${
+      className={`inline-flex min-h-11 items-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition-colors ${
+        fullWidth ? "w-full justify-center" : ""
+      } ${
         tone === "danger"
           ? "border-danger/20 bg-danger/5 text-danger hover:bg-danger/10"
-          : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+          : tone === "muted"
+          ? "border-slate-200 dark:border-slate-700 bg-transparent text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+          : "border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-800"
       }`}
     >
-      <Icon size={14} />
+      <Icon size={16} />
       {label}
     </button>
   );

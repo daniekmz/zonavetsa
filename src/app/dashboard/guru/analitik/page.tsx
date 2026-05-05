@@ -154,10 +154,10 @@ export default function AnalitikPage() {
   if (isLoading) {
     return (
       <div className="flex flex-col gap-6">
-        <div className="h-24 bg-gray-200 rounded-xl animate-pulse"></div>
+        <div className="h-24 bg-gray-200 dark:bg-slate-700 rounded-xl animate-pulse"></div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="h-80 bg-gray-200 rounded-xl animate-pulse"></div>
-          <div className="h-80 bg-gray-200 rounded-xl animate-pulse"></div>
+          <div className="h-80 bg-gray-200 dark:bg-slate-700 rounded-xl animate-pulse"></div>
+          <div className="h-80 bg-gray-200 dark:bg-slate-700 rounded-xl animate-pulse"></div>
         </div>
       </div>
     );
@@ -168,7 +168,7 @@ export default function AnalitikPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-primary">Dashboard Analitik</h2>
-          <p className="text-gray-500">Pantau performa kelas dan identifikasi siswa yang butuh perhatian khusus</p>
+          <p className="text-slate-500 dark:text-slate-400">Pantau performa kelas dan identifikasi siswa yang butuh perhatian khusus</p>
         </div>
       </div>
 
@@ -181,8 +181,8 @@ export default function AnalitikPage() {
           <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary mb-4">
             <Presentation size={24} />
           </div>
-          <h3 className="text-gray-500 text-sm font-medium">Total Ujian Aktif</h3>
-          <div className="text-3xl font-bold text-gray-800 mt-1">{stats.totalExams}</div>
+          <h3 className="text-slate-500 dark:text-slate-400 text-sm font-medium">Total Ujian Aktif</h3>
+          <div className="text-3xl font-bold text-slate-800 dark:text-slate-100 mt-1">{stats.totalExams}</div>
         </div>
 
         <div className="card-ai p-5 relative overflow-hidden group">
@@ -192,8 +192,8 @@ export default function AnalitikPage() {
           <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600 mb-4">
             <Users size={24} />
           </div>
-          <h3 className="text-gray-500 text-sm font-medium">Total Partisipan Valid</h3>
-          <div className="text-3xl font-bold text-gray-800 mt-1">{stats.totalStudents}</div>
+          <h3 className="text-slate-500 dark:text-slate-400 text-sm font-medium">Total Partisipan Valid</h3>
+          <div className="text-3xl font-bold text-slate-800 dark:text-slate-100 mt-1">{stats.totalStudents}</div>
         </div>
 
         <div className="card-ai p-5 relative overflow-hidden group">
@@ -203,8 +203,8 @@ export default function AnalitikPage() {
           <div className="w-12 h-12 bg-success/10 rounded-xl flex items-center justify-center text-success mb-4">
             <TrendingUp size={24} />
           </div>
-          <h3 className="text-gray-500 text-sm font-medium">Rata-rata Nilai Global</h3>
-          <div className="text-3xl font-bold text-gray-800 mt-1">{stats.avgScoreOverall}</div>
+          <h3 className="text-slate-500 dark:text-slate-400 text-sm font-medium">Rata-rata Nilai Global</h3>
+          <div className="text-3xl font-bold text-slate-800 dark:text-slate-100 mt-1">{stats.avgScoreOverall}</div>
         </div>
 
         <div className="card-ai p-5 border border-danger/20 relative overflow-hidden group">
@@ -258,7 +258,7 @@ export default function AnalitikPage() {
 
         {/* At-Risk Students Early Warning System */}
         <div className="card-ai p-0 overflow-hidden flex flex-col">
-          <div className="p-6 pb-4 border-b border-gray-100 flex items-center justify-between bg-red-50/50">
+          <div className="p-6 pb-4 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between bg-red-50/50">
             <div>
               <h3 className="text-xl font-bold text-danger flex items-center gap-2">
                 <AlertTriangle size={24} className="animate-pulse" />
@@ -274,7 +274,7 @@ export default function AnalitikPage() {
           <div className="flex-1 overflow-auto max-h-[400px]">
             {atRiskStudents.length > 0 ? (
               <table className="w-full text-sm text-left">
-                <thead className="text-xs text-gray-500 bg-gray-50/50 sticky top-0 uppercase">
+                <thead className="text-xs text-slate-500 dark:text-slate-400 bg-gray-50 dark:bg-slate-800/50 sticky top-0 uppercase">
                   <tr>
                     <th scope="col" className="px-6 py-3 rounded-tl-lg">Siswa</th>
                     <th scope="col" className="px-6 py-3 text-center">Rata-rata</th>
@@ -290,8 +290,8 @@ export default function AnalitikPage() {
                             {student.name.charAt(0)}
                           </div>
                           <div>
-                            <p className="font-semibold text-gray-800 line-clamp-1">{student.name}</p>
-                            <p className="text-xs text-gray-500">NIS: {student.nis}</p>
+                            <p className="font-semibold text-slate-800 dark:text-slate-100 line-clamp-1">{student.name}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">NIS: {student.nis}</p>
                           </div>
                         </div>
                       </td>
@@ -300,7 +300,7 @@ export default function AnalitikPage() {
                           {student.avgScore}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-center text-gray-600">
+                      <td className="px-6 py-4 text-center text-slate-600 dark:text-slate-300">
                         {student.examsTaken}
                       </td>
                     </tr>
@@ -308,9 +308,9 @@ export default function AnalitikPage() {
                 </tbody>
               </table>
             ) : (
-              <div className="h-full flex flex-col items-center justify-center text-gray-500 p-8">
+              <div className="h-full flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 p-8">
                 <CheckCircle size={48} className="text-success mb-4 opacity-50" />
-                <p className="font-medium text-gray-600">Luar biasa!</p>
+                <p className="font-medium text-slate-600 dark:text-slate-300">Luar biasa!</p>
                 <p className="text-sm text-center mt-2 max-w-sm">
                   Saat ini tidak ada siswa yang berada di bawah standar kelulusan rata-rata.
                 </p>
