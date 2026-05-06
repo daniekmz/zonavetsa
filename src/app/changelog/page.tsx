@@ -190,7 +190,7 @@ export default function ChangelogPage() {
         <div className="mx-auto flex max-w-4xl flex-col items-center gap-3 px-4 text-center sm:flex-row sm:justify-between sm:text-left">
           <BrandMark />
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            © {new Date().getFullYear()} ZonaVetsa by SMK Veteran 1 Sukoharjo.
+            © 2026 ZonaVetsa by SMK Veteran 1 Sukoharjo.
           </p>
         </div>
       </footer>

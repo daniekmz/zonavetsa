@@ -13,7 +13,7 @@ export const viewport: Viewport = {
   themeColor: "#002b5b",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
+  maximumScale: 5,
 };
 
 // ━━ Font: Inter — Base 15px, antialiased ━━
@@ -122,9 +122,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className="scroll-smooth">
+    <html lang="id" className="scroll-smooth" suppressHydrationWarning>
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem("theme");if(t==="dark"||(t==="system"&&window.matchMedia("(prefers-color-scheme:dark)").matches)){document.documentElement.classList.add("dark")}}catch(e){}})();`,
+          }}
+        />
+        {/* Preconnect to critical origins */}
+        {process.env.NEXT_PUBLIC_SUPABASE_URL && (
+          <>
+            <link rel="preconnect" href={process.env.NEXT_PUBLIC_SUPABASE_URL} crossOrigin="anonymous" />
+            <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_SUPABASE_URL} />
+          </>
+        )}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="ZonaVetsa" />
@@ -132,11 +143,8 @@ export default function RootLayout({
         <meta name="HandheldFriendly" content="true" />
         <meta name="googlebot" content="index,follow" />
         <meta name="google" content="notranslate" />
-        {/* PWA Meta Tags */}
-        <meta name="theme-color" content="#1a3a6b" />
-        <meta name="description" content="Portal Digital SMK Veteran 1 Sukoharjo - Akses materi pembelajaran, tugas, dan absensi" />
       </head>
-      <body className={`${inter.variable} antialiased`}>
+      <body className={`${inter.variable} antialiased`} suppressHydrationWarning>
         {children}
         <Toaster />
       </body>

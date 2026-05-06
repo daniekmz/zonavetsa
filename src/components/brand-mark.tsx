@@ -30,10 +30,10 @@ export function BrandMark({
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-[1.0625rem] font-bold tracking-tight text-navy dark:text-white sm:text-lg">
-            ZONA<span className="text-teal">VETSA</span>
+            ZONA<span className="text-teal-700 dark:text-teal-400">VETSA</span>
           </span>
         </div>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500 dark:text-slate-400 sm:tracking-[0.22em]">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400 sm:tracking-[0.22em]">
           {subtitle || "SMK Veteran 1 Sukoharjo"}
         </p>
       </div>

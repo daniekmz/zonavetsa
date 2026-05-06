@@ -14,23 +14,21 @@ const getSystemTheme = (): "light" | "dark" => {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 };
 
-export const useThemeStore = create<ThemeState>((set) => {
-  // Initialize from localStorage or default to light
-  let initialTheme: Theme = "light";
-  if (typeof window !== "undefined") {
-    const stored = localStorage.getItem("theme") as Theme;
-    initialTheme = stored || "light";
-  }
-
-  return {
-    theme: initialTheme,
-    setTheme: (theme: Theme) => {
+/**
+ * Theme store — always initializes as "light" on BOTH server and client
+ * to avoid hydration mismatch. The real stored theme is applied in
+ * initTheme() which runs inside useEffect (client-only).
+ */
+export const useThemeStore = create<ThemeState>((set) => ({
+  theme: "light",
+  setTheme: (theme: Theme) => {
+    if (typeof window !== "undefined") {
       localStorage.setItem("theme", theme);
-      set({ theme });
-      applyTheme(theme);
-    },
-  };
-});
+    }
+    set({ theme });
+    applyTheme(theme);
+  },
+}));
 
 export function applyTheme(theme: Theme) {
   if (typeof window === "undefined") return;
@@ -45,15 +43,22 @@ export function applyTheme(theme: Theme) {
   }
 }
 
+/**
+ * Initialize theme from localStorage — MUST be called inside useEffect
+ * to ensure it only runs on the client after hydration is complete.
+ */
 export function initTheme() {
   if (typeof window === "undefined") return;
 
   const stored = localStorage.getItem("theme") as Theme | null;
   const theme = stored || "light";
+
+  // Sync store with localStorage value
+  useThemeStore.setState({ theme });
   applyTheme(theme);
 
   // Listen for system theme changes
-  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
     const currentTheme = localStorage.getItem("theme") as Theme;
     if (currentTheme === "system") {
       applyTheme("system");

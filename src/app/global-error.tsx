@@ -1,11 +1,17 @@
 "use client";
 
 import { useEffect } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { AlertTriangle, Home, RefreshCw, Mail } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
+/**
+ * Global Error Boundary — replaces the entire <html> tree.
+ *
+ * IMPORTANT: This component MUST render its own <html> and <body> tags
+ * because Next.js unmounts the root layout when a global error occurs.
+ * Do NOT use next/navigation hooks (useRouter, Link, etc.) here — the
+ * app router is not mounted at this level, which causes the
+ * "invariant expected app router to be mounted" error.
+ */
 export default function GlobalError({
   error,
   reset,
@@ -13,73 +19,177 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  const router = useRouter();
-
   useEffect(() => {
     // Log error ke console untuk debugging
     console.error("Global error caught:", error);
   }, [error]);
 
   return (
-    <div className="min-h-screen bg-school-gradient flex items-center justify-center p-4 relative">
-      {/* Main Content */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-8 w-full max-w-md relative z-10 text-center">
-        {/* Icon */}
-        <div className="w-20 h-20 bg-danger/10 rounded-full flex items-center justify-center mx-auto mb-4">
-          <AlertTriangle size={40} className="text-danger" />
-        </div>
+    <html lang="id">
+      <body style={{ margin: 0, fontFamily: "Inter, system-ui, sans-serif" }}>
+        <div
+          style={{
+            minHeight: "100vh",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "1rem",
+            background: "linear-gradient(135deg, #1a3a6b 0%, #2a5298 60%, #1D9E75 100%)",
+          }}
+        >
+          {/* Main Content */}
+          <div
+            style={{
+              backgroundColor: "#fff",
+              borderRadius: "1rem",
+              boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)",
+              padding: "2rem",
+              width: "100%",
+              maxWidth: "28rem",
+              textAlign: "center",
+            }}
+          >
+            {/* Icon */}
+            <div
+              style={{
+                width: "5rem",
+                height: "5rem",
+                backgroundColor: "rgba(239, 68, 68, 0.1)",
+                borderRadius: "9999px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 1rem",
+              }}
+            >
+              <AlertTriangle size={40} color="#ef4444" />
+            </div>
 
-        {/* Title */}
-        <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">
-          Terjadi Kesalahan
-        </h2>
+            {/* Title */}
+            <h2
+              style={{
+                fontSize: "1.5rem",
+                fontWeight: 700,
+                color: "#1e293b",
+                marginBottom: "0.5rem",
+              }}
+            >
+              Terjadi Kesalahan
+            </h2>
 
-        {/* Description */}
-        <p className="text-slate-500 dark:text-slate-400 mb-6">
-          Maaf, terjadi kesalahan yang tidak terduga. Silakan coba lagi atau hubungi administrator.
-        </p>
-
-        {/* Error details (hanya tampil di development) */}
-        {process.env.NODE_ENV === "development" && (
-          <div className="bg-gray-100 dark:bg-slate-800 rounded-lg p-3 mb-6 text-left overflow-auto">
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-              {error?.message || "Unknown error"}
+            {/* Description */}
+            <p
+              style={{
+                color: "#64748b",
+                marginBottom: "1.5rem",
+                lineHeight: 1.6,
+              }}
+            >
+              Maaf, terjadi kesalahan yang tidak terduga. Silakan coba lagi atau
+              hubungi administrator.
             </p>
+
+            {/* Error details (hanya tampil di development) */}
+            {process.env.NODE_ENV === "development" && (
+              <div
+                style={{
+                  backgroundColor: "#f1f5f9",
+                  borderRadius: "0.5rem",
+                  padding: "0.75rem",
+                  marginBottom: "1.5rem",
+                  textAlign: "left",
+                  overflow: "auto",
+                }}
+              >
+                <p
+                  style={{
+                    fontSize: "0.75rem",
+                    color: "#64748b",
+                    fontFamily: "monospace",
+                    margin: 0,
+                  }}
+                >
+                  {error?.message || "Unknown error"}
+                </p>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              <button
+                onClick={() => reset()}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.5rem",
+                  width: "100%",
+                  padding: "0.75rem 1.5rem",
+                  backgroundColor: "#1a3a6b",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "0.5rem",
+                  fontSize: "0.9375rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                <RefreshCw size={18} />
+                Coba Lagi
+              </button>
+
+              <a
+                href="/"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.5rem",
+                  width: "100%",
+                  padding: "0.75rem 1.5rem",
+                  backgroundColor: "transparent",
+                  color: "#1a3a6b",
+                  border: "1px solid #cbd5e1",
+                  borderRadius: "0.5rem",
+                  fontSize: "0.9375rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  textDecoration: "none",
+                }}
+              >
+                <Home size={18} />
+                Kembali ke Beranda
+              </a>
+            </div>
+
+            {/* Contact Admin */}
+            <div
+              style={{
+                marginTop: "1.5rem",
+                paddingTop: "1.5rem",
+                borderTop: "1px solid #e2e8f0",
+              }}
+            >
+              <p style={{ fontSize: "0.875rem", color: "#64748b", marginBottom: "0.5rem" }}>
+                Masih bermasalah? Hubungi administrator:
+              </p>
+              <a
+                href="mailto:admin@smkvetsa.sch.id"
+                style={{
+                  fontSize: "0.875rem",
+                  color: "#1a3a6b",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.25rem",
+                }}
+              >
+                <Mail size={14} />
+                admin@smkvetsa.sch.id
+              </a>
+            </div>
           </div>
-        )}
-
-        {/* Action Buttons */}
-        <div className="space-y-3">
-          <Button 
-            onClick={() => reset()}
-            className="w-full bg-primary hover:bg-primary-light"
-          >
-            <RefreshCw size={18} className="mr-2" />
-            Coba Lagi
-          </Button>
-
-          <Link href="/" className="block">
-            <Button variant="outline" className="w-full">
-              <Home size={18} className="mr-2" />
-              Kembali ke Beranda
-            </Button>
-          </Link>
         </div>
-
-        {/* Contact Admin */}
-        <div className="mt-6 pt-6 border-t border-gray-200 dark:border-slate-800">
-          <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">
-            Still having issues? Contact administrator:
-          </p>
-          <a 
-            href="mailto:admin@smkvetsa.sch.id" 
-            className="text-sm text-primary hover:underline inline-flex items-center gap-1"
-          >
-            <Mail size={14} />
-            admin@smkvetsa.sch.id
-          </a>
-        </div>
-      </div>
-    </div>
+      </body>
+    </html>
   );
 }

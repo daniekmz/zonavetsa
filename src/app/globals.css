@@ -147,6 +147,7 @@
   .card:hover {
     @apply shadow-card-hover;
     transition: box-shadow 200ms ease;
+    will-change: box-shadow;
   }
 
   .card-subtle {
@@ -300,6 +301,7 @@
     );
     background-size: 200% 100%;
     animation: skeleton 1.5s ease-in-out infinite;
+    will-change: background-position;
   }
 
   /* ━━ Dark mode dark-bg overrides ━━ */
@@ -437,18 +439,20 @@
     content: "";
     position: absolute;
     bottom: -2px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
+    left: 0;
+    right: 0;
     height: 2px;
     background-color: #1D9E75;
     border-radius: 1px;
-    transition: width 200ms ease;
+    transform: scaleX(0);
+    transform-origin: center;
+    transition: transform 200ms ease;
+    will-change: transform;
   }
 
   .nav-underline.active::after,
   .nav-underline:hover::after {
-    width: 100%;
+    transform: scaleX(1);
   }
 }
 
