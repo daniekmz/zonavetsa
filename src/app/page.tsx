@@ -206,7 +206,7 @@ export default function HomePage() {
             <Link href="/login/siswa" className="hidden sm:block">
               <Button
                 variant="secondary"
-                className="bg-teal hover:bg-teal-600 text-white border-0"
+                className="bg-teal-700 hover:bg-teal-800 text-white border-0"
                 size="sm"
               >
                 <LogIn size={15} />
@@ -253,7 +253,7 @@ export default function HomePage() {
                 </a>
               ))}
               <Link href="/login/siswa" className="mt-2 block w-full" onClick={() => setMobileMenuOpen(false)}>
-                <Button className="w-full bg-teal hover:bg-teal-600 text-white border-0">
+                <Button className="w-full bg-teal-700 hover:bg-teal-800 text-white border-0">
                   <LogIn size={16} />
                   Login Siswa
                 </Button>
