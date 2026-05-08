@@ -11,6 +11,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  ArrowUpCircle,
   BarChart2,
   Briefcase,
   FolderOpen,
@@ -95,6 +96,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             { href: "/dashboard/admin/guru", label: "Data Guru", icon: Users },
             { href: "/dashboard/admin/siswa", label: "Data Siswa", icon: UserPlus },
             { href: "/dashboard/admin/kelas", label: "Data Kelas", icon: GraduationCap },
+            { href: "/dashboard/admin/kenaikan-kelas", label: "Kenaikan Kelas", icon: ArrowUpCircle },
             /* ━━ Menu baru: Manajemen User ━━ */
             { href: "/dashboard/admin/users", label: "Manajemen User", icon: UsersRound },
           ],

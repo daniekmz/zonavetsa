@@ -53,6 +53,8 @@ export interface Student {
   points?: number;
   level?: number;
   achievements?: string[];
+  graduated_at?: string;
+  graduation_year?: string;
   created_at: string;
   id?: string;
 }
@@ -162,7 +164,7 @@ export interface AttendanceRecord {
   session_id: string;
   student_nis: string;
   recorded_at: string;
-  status: "present" | "late" | "absent";
+  status: "present" | "late" | "absent" | "izin" | "sakit" | "alpha";
   source?: "qr" | "manual" | "system";
   notes?: string | null;
 }
@@ -293,5 +295,33 @@ export interface PortfolioComment {
   commenter_class_id?: string | null;
   commenter_class_name?: string | null;
   comment_text: string;
+  created_at: string;
+}
+
+export interface ClassPromotion {
+  id: string;
+  academic_year: string;
+  promoted_by: string;
+  promoted_at: string;
+  total_promoted: number;
+  total_graduated: number;
+  total_failed: number;
+  notes?: string;
+  metadata?: Record<string, any>;
+  created_at: string;
+}
+
+export interface GraduatedStudent {
+  id: string;
+  student_nis: string;
+  student_name: string;
+  last_class_id?: string | null;
+  last_class_name?: string;
+  academic_year: string;
+  graduation_date: string;
+  promotion_id?: string | null;
+  points: number;
+  level: number;
+  notes?: string;
   created_at: string;
 }

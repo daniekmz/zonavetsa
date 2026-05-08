@@ -83,7 +83,7 @@ export function AIChatPopup() {
       user_id: user.id,
       role,
       content
-    }).then(({ error }) => {
+    }).then(({ error }: { error: any }) => {
       if (error) console.error("Failed to sync AI chat to DB:", error);
     });
 

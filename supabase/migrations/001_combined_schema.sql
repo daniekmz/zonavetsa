@@ -1478,3 +1478,63 @@ CREATE INDEX IF NOT EXISTS idx_ai_chat_history_user_id ON ai_chat_history(user_i
 
 -- Disable RLS for simplicity as requested
 ALTER TABLE ai_chat_history DISABLE ROW LEVEL SECURITY;
+
+
+-- ============================================
+-- FROM: 006_class_promotion.sql
+-- Kenaikan Kelas & Arsip Kelulusan
+-- ============================================
+
+-- Track each batch promotion event
+CREATE TABLE IF NOT EXISTS class_promotions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    academic_year TEXT NOT NULL,            -- e.g. '2025/2026'
+    promoted_by TEXT NOT NULL,              -- admin username
+    promoted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    total_promoted INTEGER DEFAULT 0,       -- kelas 10→11, 11→12
+    total_graduated INTEGER DEFAULT 0,      -- kelas 12→lulus
+    total_failed INTEGER DEFAULT 0,         -- siswa yang tidak naik
+    notes TEXT,
+    metadata JSONB,                         -- detailed log per class
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Archive table for graduated students (kelas 12 → lulus)
+CREATE TABLE IF NOT EXISTS graduated_students (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    student_nis TEXT NOT NULL,
+    student_name TEXT NOT NULL,
+    last_class_id UUID REFERENCES classes(id) ON DELETE SET NULL,
+    last_class_name TEXT,
+    academic_year TEXT NOT NULL,             -- tahun kelulusan
+    graduation_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    promotion_id UUID REFERENCES class_promotions(id) ON DELETE SET NULL,
+    points INTEGER DEFAULT 0,
+    level INTEGER DEFAULT 1,
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Add graduation tracking columns to students
+ALTER TABLE students ADD COLUMN IF NOT EXISTS graduated_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE students ADD COLUMN IF NOT EXISTS graduation_year TEXT;
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_class_promotions_year ON class_promotions(academic_year);
+CREATE INDEX IF NOT EXISTS idx_class_promotions_date ON class_promotions(promoted_at);
+CREATE INDEX IF NOT EXISTS idx_graduated_students_nis ON graduated_students(student_nis);
+CREATE INDEX IF NOT EXISTS idx_graduated_students_year ON graduated_students(academic_year);
+CREATE INDEX IF NOT EXISTS idx_graduated_students_class ON graduated_students(last_class_id);
+CREATE INDEX IF NOT EXISTS idx_graduated_students_promotion ON graduated_students(promotion_id);
+
+-- RLS
+ALTER TABLE class_promotions DISABLE ROW LEVEL SECURITY;
+ALTER TABLE graduated_students DISABLE ROW LEVEL SECURITY;
+
+-- Auto-update trigger
+DROP TRIGGER IF EXISTS update_class_promotions_created_at ON class_promotions;
+
+-- Update attendance_records status constraint to include new statuses
+ALTER TABLE attendance_records DROP CONSTRAINT IF EXISTS attendance_records_status_check;
+ALTER TABLE attendance_records ADD CONSTRAINT attendance_records_status_check
+    CHECK (status IN ('present', 'late', 'absent', 'izin', 'sakit', 'alpha'));

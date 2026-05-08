@@ -454,7 +454,7 @@ export default function GuruUjianPage() {
       const answersRecord: Record<string, string> = {};
       const gradedEssayPoints: Record<string, number> = {};
       
-      (allAnswers || []).forEach(a => {
+      (allAnswers || []).forEach((a: { question_id: string; answer: string | null; points_earned: number | null | undefined }) => {
           answersRecord[a.question_id] = a.answer || "";
           if (a.points_earned !== null && a.points_earned !== undefined) {
              gradedEssayPoints[a.question_id] = a.points_earned;

@@ -71,7 +71,7 @@ type DailyAttendanceRow = {
   student: Pick<Student, "nis" | "name" | "absen" | "class_id">;
   record: AttendanceRecordWithStudent | null;
   session: AttendanceSession | null;
-  state: "present" | "late" | "absent" | "unrecorded";
+  state: "present" | "late" | "absent" | "izin" | "sakit" | "alpha" | "unrecorded";
 };
 
 const playSuccessSound = () => {
@@ -142,7 +142,7 @@ export default function TeacherQRAbsenPage() {
   const [dailyRows, setDailyRows] = useState<DailyAttendanceRow[]>([]);
   const [isLoadingDailyRecap, setIsLoadingDailyRecap] = useState(false);
   const [editingRow, setEditingRow] = useState<DailyAttendanceRow | null>(null);
-  const [editStatus, setEditStatus] = useState<"present" | "late" | "absent">("present");
+  const [editStatus, setEditStatus] = useState<"present" | "late" | "absent" | "izin" | "sakit" | "alpha">("present");
   const [editNotes, setEditNotes] = useState("");
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const hasRestoredCache = useRef(false);
@@ -164,6 +164,9 @@ export default function TeacherQRAbsenPage() {
       present: 0,
       late: 0,
       absent: 0,
+      izin: 0,
+      sakit: 0,
+      alpha: 0,
       unrecorded: 0,
     };
 
@@ -909,7 +912,7 @@ export default function TeacherQRAbsenPage() {
 
   const openEditDialog = (row: DailyAttendanceRow) => {
     setEditingRow(row);
-    setEditStatus(row.record?.status || (row.state === "unrecorded" ? "absent" : row.state));
+    setEditStatus(row.record?.status || (row.state === "unrecorded" ? "alpha" : row.state));
     setEditNotes(row.record?.notes || "");
   };
 
@@ -985,7 +988,7 @@ export default function TeacherQRAbsenPage() {
           recorded_at: getRecapRecordedAt(recapDate),
           status: editStatus,
           source: "manual",
-          notes: editNotes || "Diinput dari rekap harian oleh guru",
+          notes: editNotes || `${getStatusLabel(editStatus)} - diinput dari rekap harian oleh guru`,
         });
 
         if (error) throw error;
@@ -993,7 +996,7 @@ export default function TeacherQRAbsenPage() {
 
       await logActivity(teacher?.kode_guru || teacher?.id || "system", "guru", {
         action: "absensi",
-        details: `Update rekap absensi ${editingRow.student.name} menjadi ${editStatus}`,
+        details: `Update rekap absensi ${editingRow.student.name} menjadi ${getStatusLabel(editStatus)}`,
         metadata: {
           date: recapDate,
           class_id: recapClassId,
@@ -1027,6 +1030,9 @@ export default function TeacherQRAbsenPage() {
     if (status === "present") return "Hadir";
     if (status === "late") return "Terlambat";
     if (status === "absent") return "Tidak Hadir";
+    if (status === "izin") return "Izin";
+    if (status === "sakit") return "Sakit";
+    if (status === "alpha") return "Alpha";
     return "Belum Absen";
   };
 
@@ -1034,6 +1040,9 @@ export default function TeacherQRAbsenPage() {
     if (status === "present") return "bg-success/10 text-success";
     if (status === "late") return "bg-warning/10 text-warning";
     if (status === "absent") return "bg-danger/10 text-danger";
+    if (status === "izin") return "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400";
+    if (status === "sakit") return "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400";
+    if (status === "alpha") return "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400";
     return "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300";
   };
 
@@ -1368,15 +1377,7 @@ export default function TeacherQRAbsenPage() {
                       <div key={row.student.nis} className="flex items-center justify-between rounded-lg bg-gray-50 dark:bg-slate-800 p-3">
                         <div className="flex items-center gap-3">
                           <div
-                            className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                              row.state === "present"
-                                ? "bg-success/10 text-success"
-                                : row.state === "late"
-                                ? "bg-warning/10 text-warning"
-                                : row.state === "absent"
-                                ? "bg-danger/10 text-danger"
-                                : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
-                            }`}
+                            className={`flex h-10 w-10 items-center justify-center rounded-full ${getStatusClassName(row.state)}`}
                           >
                             <Users size={18} />
                           </div>
@@ -1397,6 +1398,12 @@ export default function TeacherQRAbsenPage() {
                                 ? "text-warning"
                                 : row.state === "absent"
                                 ? "text-danger"
+                                : row.state === "izin"
+                                ? "text-blue-600 dark:text-blue-400"
+                                : row.state === "sakit"
+                                ? "text-purple-600 dark:text-purple-400"
+                                : row.state === "alpha"
+                                ? "text-red-700 dark:text-red-400"
                                 : "text-slate-500 dark:text-slate-400"
                             }`}
                           >
@@ -1456,7 +1463,7 @@ export default function TeacherQRAbsenPage() {
               </div>
             </div>
 
-            <div className="mt-5 grid gap-3 md:grid-cols-4">
+            <div className="mt-5 grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-7">
               <div className="rounded-2xl border border-success/20 bg-success/10 p-4">
                 <p className="text-sm text-slate-500 dark:text-slate-400">Hadir</p>
                 <p className="mt-1 text-2xl font-bold text-success">{dailySummary.present}</p>
@@ -1464,6 +1471,18 @@ export default function TeacherQRAbsenPage() {
               <div className="rounded-2xl border border-warning/20 bg-warning/10 p-4">
                 <p className="text-sm text-slate-500 dark:text-slate-400">Terlambat</p>
                 <p className="mt-1 text-2xl font-bold text-warning">{dailySummary.late}</p>
+              </div>
+              <div className="rounded-2xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 p-4">
+                <p className="text-sm text-slate-500 dark:text-slate-400">Izin</p>
+                <p className="mt-1 text-2xl font-bold text-blue-600 dark:text-blue-400">{dailySummary.izin}</p>
+              </div>
+              <div className="rounded-2xl border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20 p-4">
+                <p className="text-sm text-slate-500 dark:text-slate-400">Sakit</p>
+                <p className="mt-1 text-2xl font-bold text-purple-600 dark:text-purple-400">{dailySummary.sakit}</p>
+              </div>
+              <div className="rounded-2xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-4">
+                <p className="text-sm text-slate-500 dark:text-slate-400">Alpha</p>
+                <p className="mt-1 text-2xl font-bold text-red-700 dark:text-red-400">{dailySummary.alpha}</p>
               </div>
               <div className="rounded-2xl border border-danger/20 bg-danger/10 p-4">
                 <p className="text-sm text-slate-500 dark:text-slate-400">Tidak Hadir</p>
@@ -1585,14 +1604,29 @@ export default function TeacherQRAbsenPage() {
 
             <div className="space-y-2">
               <Label>Status Absensi</Label>
-              <Select value={editStatus} onValueChange={(value) => setEditStatus(value as "present" | "late" | "absent")}>
+              <Select value={editStatus} onValueChange={(value) => setEditStatus(value as "present" | "late" | "absent" | "izin" | "sakit" | "alpha")}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="present">Hadir</SelectItem>
-                  <SelectItem value="late">Terlambat</SelectItem>
-                  <SelectItem value="absent">Tidak Hadir</SelectItem>
+                  <SelectItem value="present">
+                    <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-green-500" /> Hadir</span>
+                  </SelectItem>
+                  <SelectItem value="late">
+                    <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-yellow-500" /> Terlambat</span>
+                  </SelectItem>
+                  <SelectItem value="izin">
+                    <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-blue-500" /> Izin</span>
+                  </SelectItem>
+                  <SelectItem value="sakit">
+                    <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-purple-500" /> Sakit</span>
+                  </SelectItem>
+                  <SelectItem value="alpha">
+                    <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-red-600" /> Alpha</span>
+                  </SelectItem>
+                  <SelectItem value="absent">
+                    <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-rose-500" /> Tidak Hadir</span>
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
