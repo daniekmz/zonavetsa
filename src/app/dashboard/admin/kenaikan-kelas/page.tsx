@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowUpCircle, CheckCircle, AlertTriangle, Users, GraduationCap,
-  Search, Download, Archive, ChevronRight, Loader2, XCircle, History,
+  Search, Download, Archive, ChevronRight, Loader2, History,
+  CheckSquare, Square
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
@@ -20,27 +21,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import * as XLSX from "xlsx";
 import type { Class, Student, ClassPromotion, GraduatedStudent } from "@/types";
 
-type PromotionPreview = {
-  fromClass: Class;
-  toClassName: string | null; // null = graduated
-  students: Student[];
-  grade: number; // 10, 11, 12
-};
-
 const getGradeFromClassName = (name: string): number => {
   const n = name.toUpperCase().trim();
   if (n.startsWith("XII") || n.startsWith("12")) return 12;
   if (n.startsWith("XI") || n.startsWith("11")) return 11;
   if (n.startsWith("X") || n.startsWith("10")) return 10;
   return 0;
-};
-
-const getPromotedClassName = (name: string): string | null => {
-  const grade = getGradeFromClassName(name);
-  if (grade === 10) return name.replace(/^X(?!I)/i, "XI");
-  if (grade === 11) return name.replace(/^XI/i, "XII");
-  if (grade === 12) return null; // graduated
-  return null;
 };
 
 const getCurrentAcademicYear = (): string => {
@@ -58,7 +44,15 @@ export default function KenaikanKelasPage() {
   const [isExecuting, setIsExecuting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [academicYear, setAcademicYear] = useState(getCurrentAcademicYear());
-  const [excludedNis, setExcludedNis] = useState<Set<string>>(new Set());
+  
+  // Selection states
+  const [sourceClassId, setSourceClassId] = useState<string>("");
+  const [targetAction, setTargetAction] = useState<"promote" | "graduate">("promote");
+  const [targetTingkat, setTargetTingkat] = useState<string>("XI");
+  const [targetJurusan, setTargetJurusan] = useState<string>("");
+  const [targetRombel, setTargetRombel] = useState<string>("1");
+  const [selectedStudentNis, setSelectedStudentNis] = useState<Set<string>>(new Set());
+
   const [activeTab, setActiveTab] = useState("promote");
   const [searchGrad, setSearchGrad] = useState("");
 
@@ -80,48 +74,64 @@ export default function KenaikanKelasPage() {
     setIsLoading(false);
   };
 
-  const previews = useMemo<PromotionPreview[]>(() => {
-    const result: PromotionPreview[] = [];
-    const classMap = new Map(classes.map(c => [c.id, c]));
+  const uniqueJurusans = useMemo(() => {
+    const jurusans = new Set<string>();
+    classes.forEach(c => {
+      const parts = c.name.split(" ");
+      if (parts.length >= 2) jurusans.add(parts[1]);
+    });
+    return Array.from(jurusans).sort();
+  }, [classes]);
 
-    for (const cls of classes) {
-      const grade = getGradeFromClassName(cls.name);
-      if (grade < 10 || grade > 12) continue;
+  const sourceClass = useMemo(() => classes.find(c => c.id === sourceClassId), [classes, sourceClassId]);
+  const classStudents = useMemo(() => students.filter(s => s.class_id === sourceClassId), [students, sourceClassId]);
 
-      const classStudents = students.filter(s => s.class_id === cls.id && !excludedNis.has(s.nis));
-      if (classStudents.length === 0) continue;
+  // When source class changes, pre-fill targets and select all students
+  useEffect(() => {
+    if (sourceClass) {
+      const parts = sourceClass.name.split(" ");
+      if (parts.length >= 3) {
+        const tingkat = parts[0];
+        setTargetJurusan(parts[1]);
+        setTargetRombel(parts[2]);
+        
+        if (tingkat === "X") setTargetTingkat("XI");
+        else if (tingkat === "XI") setTargetTingkat("XII");
+      }
+      
+      if (getGradeFromClassName(sourceClass.name) === 12) {
+        setTargetAction("graduate");
+      } else {
+        setTargetAction("promote");
+      }
 
-      result.push({
-        fromClass: cls,
-        toClassName: getPromotedClassName(cls.name),
-        students: classStudents,
-        grade,
-      });
+      setSelectedStudentNis(new Set(classStudents.map(s => s.nis)));
+    } else {
+      setSelectedStudentNis(new Set());
     }
+  }, [sourceClassId, sourceClass, classStudents]);
 
-    return result.sort((a, b) => a.grade - b.grade || a.fromClass.name.localeCompare(b.fromClass.name));
-  }, [classes, students, excludedNis]);
-
-  const summary = useMemo(() => {
-    let promote = 0, graduate = 0, excluded = 0;
-    for (const p of previews) {
-      if (p.grade === 12) graduate += p.students.length;
-      else promote += p.students.length;
-    }
-    excluded = excludedNis.size;
-    return { promote, graduate, excluded, total: promote + graduate };
-  }, [previews, excludedNis]);
-
-  const toggleExclude = (nis: string) => {
-    setExcludedNis(prev => {
+  const toggleStudent = (nis: string) => {
+    setSelectedStudentNis(prev => {
       const next = new Set(prev);
       if (next.has(nis)) next.delete(nis); else next.add(nis);
       return next;
     });
   };
 
+  const toggleAllStudents = () => {
+    if (selectedStudentNis.size === classStudents.length) {
+      setSelectedStudentNis(new Set());
+    } else {
+      setSelectedStudentNis(new Set(classStudents.map(s => s.nis)));
+    }
+  };
+
+  const targetClassName = `${targetTingkat} ${targetJurusan} ${targetRombel}`;
+
   const executePromotion = async () => {
-    if (summary.total === 0) { toast("Tidak ada siswa untuk dinaikkan", "error"); return; }
+    if (selectedStudentNis.size === 0) { toast("Pilih minimal 1 siswa", "error"); return; }
+    if (!sourceClass) return;
 
     const admin = sessionStorage.getItem("adminSession");
     if (!admin) { toast("Sesi admin tidak ditemukan", "error"); return; }
@@ -131,23 +141,23 @@ export default function KenaikanKelasPage() {
     const supabase = createClient();
 
     try {
+      const selectedStudents = classStudents.filter(s => selectedStudentNis.has(s.nis));
+      const targetNameDisplay = targetAction === "graduate" ? "LULUS" : targetClassName;
+
       // 1. Create promotion record
       const { data: promoRecord, error: promoErr } = await supabase
         .from("class_promotions")
         .insert({
           academic_year: academicYear,
           promoted_by: adminData.username || adminData.name,
-          total_promoted: summary.promote,
-          total_graduated: summary.graduate,
-          total_failed: summary.excluded,
-          notes: `Kenaikan kelas tahun ajaran ${academicYear}`,
+          total_promoted: targetAction === "promote" ? selectedStudents.length : 0,
+          total_graduated: targetAction === "graduate" ? selectedStudents.length : 0,
+          total_failed: 0,
+          notes: `Kenaikan dari kelas ${sourceClass.name} ke ${targetNameDisplay} tahun ajaran ${academicYear}`,
           metadata: {
-            previews: previews.map(p => ({
-              from: p.fromClass.name,
-              to: p.toClassName,
-              count: p.students.length,
-              grade: p.grade,
-            })),
+            fromClass: sourceClass.name,
+            toClass: targetNameDisplay,
+            studentCount: selectedStudents.length,
           },
         })
         .select()
@@ -155,76 +165,63 @@ export default function KenaikanKelasPage() {
 
       if (promoErr) throw promoErr;
 
-      // 2. Process each class group
-      for (const preview of previews) {
-        const studentNisList = preview.students.map(s => s.nis);
+      // 2. Process students
+      if (targetAction === "graduate") {
+        // Archive
+        const gradRecords = selectedStudents.map(s => ({
+          student_nis: s.nis,
+          student_name: s.name,
+          last_class_id: sourceClass.id,
+          last_class_name: sourceClass.name,
+          academic_year: academicYear,
+          promotion_id: promoRecord.id,
+          points: s.points || 0,
+          level: s.level || 1,
+        }));
+        await supabase.from("graduated_students").insert(gradRecords);
+        await supabase
+          .from("students")
+          .update({
+            status: "graduated",
+            is_active: false,
+            last_class_id: sourceClass.id,
+            class_id: null,
+            graduated_at: new Date().toISOString(),
+            graduation_year: academicYear,
+          })
+          .in("nis", Array.from(selectedStudentNis));
+      } else {
+        // Promote
+        let targetClass = classes.find(c => c.name === targetClassName);
 
-        if (preview.grade === 12) {
-          // Archive to graduated_students
-          const gradRecords = preview.students.map(s => ({
-            student_nis: s.nis,
-            student_name: s.name,
-            last_class_id: preview.fromClass.id,
-            last_class_name: preview.fromClass.name,
-            academic_year: academicYear,
-            promotion_id: promoRecord.id,
-            points: s.points || 0,
-            level: s.level || 1,
-          }));
-
-          await supabase.from("graduated_students").insert(gradRecords);
-
-          // Update students: set graduated status
-          await supabase
-            .from("students")
-            .update({
-              status: "graduated",
-              is_active: false,
-              last_class_id: preview.fromClass.id,
-              class_id: null,
-              graduated_at: new Date().toISOString(),
-              graduation_year: academicYear,
-            })
-            .in("nis", studentNisList);
-
-        } else {
-          // Find or ensure target class exists
-          const targetName = preview.toClassName!;
-          let targetClass = classes.find(c => c.name === targetName);
-
-          if (!targetClass) {
-            const { data: newCls } = await supabase
-              .from("classes")
-              .insert({ name: targetName })
-              .select()
-              .single();
-            if (newCls) targetClass = newCls;
-          }
-
-          if (!targetClass) {
-            toast(`Gagal membuat kelas ${targetName}`, "error");
-            continue;
-          }
-
-          // Move students to next class
-          await supabase
-            .from("students")
-            .update({
-              last_class_id: preview.fromClass.id,
-              class_id: targetClass.id,
-            })
-            .in("nis", studentNisList);
+        if (!targetClass) {
+          const { data: newCls } = await supabase
+            .from("classes")
+            .insert({ name: targetClassName })
+            .select()
+            .single();
+          if (newCls) targetClass = newCls;
         }
+
+        if (!targetClass) throw new Error(`Gagal membuat kelas ${targetClassName}`);
+
+        await supabase
+          .from("students")
+          .update({
+            last_class_id: sourceClass.id,
+            class_id: targetClass.id,
+          })
+          .in("nis", Array.from(selectedStudentNis));
       }
 
-      toast(`Berhasil! ${summary.promote} siswa naik kelas, ${summary.graduate} siswa lulus`, "success");
+      toast(`Berhasil memproses ${selectedStudents.length} siswa`, "success");
       setShowConfirm(false);
-      setExcludedNis(new Set());
+      setSourceClassId("");
       await loadData();
 
     } catch (err: any) {
       console.error("Promotion error:", err);
-      toast("Gagal melakukan kenaikan kelas: " + (err.message || ""), "error");
+      toast("Gagal melakukan proses: " + (err.message || ""), "error");
     } finally {
       setIsExecuting(false);
     }
@@ -264,7 +261,7 @@ export default function KenaikanKelasPage() {
       <div>
         <h2 className="text-2xl font-bold text-primary">Kenaikan Kelas</h2>
         <p className="text-slate-500 dark:text-slate-400">
-          Naikkan siswa kelas X→XI, XI→XII, dan arsipkan kelulusan kelas XII.
+          Proses kenaikan kelas atau kelulusan siswa dengan pengaturan kelas, rombel, dan jurusan.
         </p>
       </div>
 
@@ -277,125 +274,172 @@ export default function KenaikanKelasPage() {
 
         {/* ━━ TAB: Kenaikan Kelas ━━ */}
         <TabsContent value="promote" className="space-y-6">
-          {/* Settings */}
-          <div className="rounded-xl bg-white dark:bg-slate-900 p-6 shadow-sm">
-            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-4">Pengaturan Kenaikan</h3>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Tahun Ajaran</Label>
-                <Input value={academicYear} onChange={e => setAcademicYear(e.target.value)} placeholder="2025/2026" />
-              </div>
-              <div className="flex items-end">
-                <Button onClick={() => setShowConfirm(true)} disabled={summary.total === 0} className="w-full bg-primary hover:bg-primary/90">
-                  <ArrowUpCircle size={18} />
-                  Eksekusi Kenaikan Kelas
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Summary cards */}
-          <div className="grid gap-4 sm:grid-cols-4">
-            <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5">
-              <p className="text-sm text-slate-500 dark:text-slate-400">Total Siswa</p>
-              <p className="mt-1 text-3xl font-bold text-primary">{summary.total}</p>
-            </div>
-            <div className="rounded-2xl border border-success/20 bg-success/10 p-5">
-              <p className="text-sm text-slate-500 dark:text-slate-400">Naik Kelas</p>
-              <p className="mt-1 text-3xl font-bold text-success">{summary.promote}</p>
-            </div>
-            <div className="rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-5">
-              <p className="text-sm text-slate-500 dark:text-slate-400">Lulus (XII)</p>
-              <p className="mt-1 text-3xl font-bold text-amber-600 dark:text-amber-400">{summary.graduate}</p>
-            </div>
-            <div className="rounded-2xl border border-danger/20 bg-danger/10 p-5">
-              <p className="text-sm text-slate-500 dark:text-slate-400">Dikecualikan</p>
-              <p className="mt-1 text-3xl font-bold text-danger">{summary.excluded}</p>
-            </div>
-          </div>
-
-          {/* Preview per class */}
-          {previews.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-12 text-center text-slate-500 dark:text-slate-400">
-              <Users size={48} className="mx-auto mb-3 opacity-40" />
-              <p>Tidak ada siswa aktif yang bisa dinaikkan.</p>
-              <p className="text-sm mt-1">Pastikan data siswa sudah terisi dengan benar dan memiliki kelas X, XI, atau XII.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {previews.map(preview => (
-                <div key={preview.fromClass.id} className="rounded-xl bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
-                  {/* Header */}
-                  <div className={`flex items-center justify-between px-5 py-4 ${
-                    preview.grade === 12
-                      ? "bg-gradient-to-r from-amber-500/10 to-amber-600/5 border-b border-amber-200 dark:border-amber-800"
-                      : "bg-gradient-to-r from-primary/5 to-teal/5 border-b border-primary/10"
-                  }`}>
-                    <div className="flex items-center gap-3">
-                      <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${
-                        preview.grade === 12 ? "bg-amber-100 dark:bg-amber-900/40 text-amber-600" : "bg-primary/10 text-primary"
-                      }`}>
-                        {preview.grade === 12 ? <GraduationCap size={20} /> : <ArrowUpCircle size={20} />}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-slate-800 dark:text-slate-100">{preview.fromClass.name}</span>
-                          <ChevronRight size={16} className="text-slate-400" />
-                          <span className={`font-bold ${preview.grade === 12 ? "text-amber-600 dark:text-amber-400" : "text-success"}`}>
-                            {preview.toClassName || "LULUS"}
-                          </span>
-                        </div>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">
-                          {preview.students.length} siswa {preview.grade === 12 ? "akan diarsipkan sebagai alumni" : "akan naik kelas"}
-                        </p>
-                      </div>
-                    </div>
-                    <span className={`rounded-full px-3 py-1 text-sm font-semibold ${
-                      preview.grade === 12
-                        ? "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300"
-                        : "bg-success/10 text-success"
-                    }`}>
-                      {preview.students.length}
-                    </span>
+          <div className="grid gap-6 md:grid-cols-12">
+            
+            {/* Sidebar Konfigurasi */}
+            <div className="md:col-span-4 space-y-4">
+              <div className="rounded-xl bg-white dark:bg-slate-900 p-5 shadow-sm border border-slate-100 dark:border-slate-800">
+                <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs">1</div>
+                  Pilih Kelas Asal
+                </h3>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Tahun Ajaran</Label>
+                    <Input value={academicYear} onChange={e => setAcademicYear(e.target.value)} placeholder="2025/2026" />
                   </div>
-
-                  {/* Student list */}
-                  <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-[300px] overflow-y-auto">
-                    {preview.students.map(student => {
-                      const isExcluded = excludedNis.has(student.nis);
-                      return (
-                        <div key={student.nis} className={`flex items-center justify-between px-5 py-3 transition-colors ${
-                          isExcluded ? "bg-danger/5 opacity-60" : "hover:bg-slate-50 dark:hover:bg-slate-800"
-                        }`}>
-                          <div className="flex items-center gap-3">
-                            <div className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold ${
-                              isExcluded ? "bg-danger/10 text-danger" : "bg-primary/10 text-primary"
-                            }`}>
-                              {student.absen || "#"}
-                            </div>
-                            <div>
-                              <p className={`font-medium ${isExcluded ? "line-through text-slate-400" : "text-slate-800 dark:text-slate-100"}`}>
-                                {student.name}
-                              </p>
-                              <p className="text-xs text-slate-500 dark:text-slate-400">NIS: {student.nis}</p>
-                            </div>
-                          </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => toggleExclude(student.nis)}
-                            className={isExcluded ? "border-success text-success hover:bg-success/10" : "border-danger text-danger hover:bg-danger/10"}
-                          >
-                            {isExcluded ? <><CheckCircle size={14} /> Masukkan</> : <><XCircle size={14} /> Kecualikan</>}
-                          </Button>
-                        </div>
-                      );
-                    })}
+                  <div className="space-y-2">
+                    <Label>Kelas Asal</Label>
+                    <Select value={sourceClassId} onValueChange={setSourceClassId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih Kelas..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {classes.map(c => (
+                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
-              ))}
+              </div>
+
+              {sourceClass && (
+                <div className="rounded-xl bg-white dark:bg-slate-900 p-5 shadow-sm border border-slate-100 dark:border-slate-800 animate-in fade-in slide-in-from-left-4">
+                  <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs">2</div>
+                    Tujuan Kenaikan
+                  </h3>
+                  
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Aksi</Label>
+                      <Select value={targetAction} onValueChange={(v: any) => setTargetAction(v)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="promote">Naik/Pindah Kelas</SelectItem>
+                          <SelectItem value="graduate">Lulus (Arsip Alumni)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {targetAction === "promote" && (
+                      <div className="grid grid-cols-3 gap-2 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-100 dark:border-slate-700">
+                        <div className="space-y-1">
+                          <Label className="text-xs">Tingkat</Label>
+                          <Select value={targetTingkat} onValueChange={setTargetTingkat}>
+                            <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="X">X</SelectItem>
+                              <SelectItem value="XI">XI</SelectItem>
+                              <SelectItem value="XII">XII</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Jurusan</Label>
+                          <Select value={targetJurusan} onValueChange={setTargetJurusan}>
+                            <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {uniqueJurusans.map(j => (
+                                <SelectItem key={j} value={j}>{j}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Rombel</Label>
+                          <Select value={targetRombel} onValueChange={setTargetRombel}>
+                            <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {["1","2","3","4","5","6","7"].map(r => (
+                                <SelectItem key={r} value={r}>{r}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="col-span-3 mt-2 text-center text-sm font-medium text-primary">
+                          Target: {targetClassName}
+                        </div>
+                      </div>
+                    )}
+
+                    <Button 
+                      onClick={() => setShowConfirm(true)} 
+                      disabled={selectedStudentNis.size === 0} 
+                      className="w-full bg-primary hover:bg-primary/90 mt-2"
+                    >
+                      Eksekusi ({selectedStudentNis.size} Siswa)
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+
+            {/* Panel Daftar Siswa */}
+            <div className="md:col-span-8">
+              {!sourceClass ? (
+                <div className="rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 h-full min-h-[300px] flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 p-8 text-center">
+                  <GraduationCap size={48} className="mb-3 opacity-40" />
+                  <p>Pilih kelas asal terlebih dahulu untuk melihat daftar siswa.</p>
+                </div>
+              ) : (
+                <div className="rounded-xl bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col h-full max-h-[600px] animate-in fade-in slide-in-from-right-4">
+                  <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50">
+                    <div>
+                      <h3 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs">3</div>
+                        Pilih Siswa ({classStudents.length})
+                      </h3>
+                      <p className="text-sm text-slate-500 mt-0.5">Pilih siswa yang akan diproses ke tahap selanjutnya.</p>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={toggleAllStudents}>
+                      {selectedStudentNis.size === classStudents.length ? (
+                        <><Square size={16} className="mr-2" /> Deselect All</>
+                      ) : (
+                        <><CheckSquare size={16} className="mr-2" /> Select All</>
+                      )}
+                    </Button>
+                  </div>
+
+                  <div className="overflow-y-auto flex-1 p-2">
+                    {classStudents.length === 0 ? (
+                      <div className="p-8 text-center text-slate-500">Tidak ada siswa aktif di kelas ini.</div>
+                    ) : (
+                      <div className="grid gap-1 sm:grid-cols-2">
+                        {classStudents.map(student => {
+                          const isSelected = selectedStudentNis.has(student.nis);
+                          return (
+                            <div 
+                              key={student.nis} 
+                              onClick={() => toggleStudent(student.nis)}
+                              className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                                isSelected 
+                                  ? "border-primary bg-primary/5 shadow-sm" 
+                                  : "border-slate-200 dark:border-slate-700 hover:border-primary/50"
+                              }`}
+                            >
+                              <div className={`flex items-center justify-center w-5 h-5 rounded border ${
+                                isSelected ? "bg-primary border-primary text-white" : "border-slate-300 dark:border-slate-600"
+                              }`}>
+                                {isSelected && <CheckCircle size={14} />}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-slate-800 dark:text-slate-100 truncate">{student.name}</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">NIS: {student.nis}</p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </TabsContent>
 
         {/* ━━ TAB: Arsip Alumni ━━ */}
@@ -434,7 +478,6 @@ export default function KenaikanKelasPage() {
                       <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">Nama</th>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">Kelas Terakhir</th>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">Tahun Lulus</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 dark:text-slate-300">Poin</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y dark:divide-slate-800">
@@ -445,7 +488,6 @@ export default function KenaikanKelasPage() {
                         <td className="px-4 py-3 text-sm text-slate-800 dark:text-slate-100">{g.student_name}</td>
                         <td className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">{g.last_class_name || "-"}</td>
                         <td className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">{g.academic_year}</td>
-                        <td className="px-4 py-3 text-sm text-amber-600 dark:text-amber-400 font-medium">{g.points}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -476,11 +518,8 @@ export default function KenaikanKelasPage() {
                         </p>
                       </div>
                       <div className="flex gap-3">
-                        <span className="rounded-full bg-success/10 px-3 py-1 text-sm font-semibold text-success">{p.total_promoted} naik</span>
-                        <span className="rounded-full bg-amber-100 dark:bg-amber-900/40 px-3 py-1 text-sm font-semibold text-amber-700 dark:text-amber-300">{p.total_graduated} lulus</span>
-                        {p.total_failed > 0 && (
-                          <span className="rounded-full bg-danger/10 px-3 py-1 text-sm font-semibold text-danger">{p.total_failed} tidak naik</span>
-                        )}
+                        {p.total_promoted > 0 && <span className="rounded-full bg-success/10 px-3 py-1 text-sm font-semibold text-success">{p.total_promoted} naik</span>}
+                        {p.total_graduated > 0 && <span className="rounded-full bg-amber-100 dark:bg-amber-900/40 px-3 py-1 text-sm font-semibold text-amber-700 dark:text-amber-300">{p.total_graduated} lulus</span>}
                       </div>
                     </div>
                     {p.notes && <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{p.notes}</p>}
@@ -494,41 +533,43 @@ export default function KenaikanKelasPage() {
 
       {/* ━━ Confirmation Dialog ━━ */}
       <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle size={20} className="text-warning" />
-              Konfirmasi Kenaikan Kelas
+              Konfirmasi Proses
             </DialogTitle>
             <DialogDescription>
-              Tindakan ini akan memindahkan siswa ke kelas berikutnya dan mengarsipkan lulusan kelas XII. Proses ini tidak dapat di-undo.
+              Pastikan pengaturan tujuan sudah benar.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="rounded-xl border border-warning/30 bg-warning/10 p-4">
-              <p className="text-sm font-semibold text-warning">Ringkasan Eksekusi:</p>
-              <ul className="mt-2 space-y-1 text-sm text-slate-700 dark:text-slate-300">
-                <li>• <strong>{summary.promote}</strong> siswa akan naik kelas (X→XI, XI→XII)</li>
-                <li>• <strong>{summary.graduate}</strong> siswa kelas XII akan diarsipkan sebagai alumni</li>
-                {summary.excluded > 0 && (
-                  <li>• <strong>{summary.excluded}</strong> siswa dikecualikan (tidak naik)</li>
-                )}
-                <li>• Tahun ajaran: <strong>{academicYear}</strong></li>
-              </ul>
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+              <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Memproses <strong>{selectedStudentNis.size}</strong> siswa dari kelas <strong>{sourceClass?.name}</strong>.
+              </p>
+              <div className="mt-3 p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
+                <p className="text-xs text-slate-500 mb-1">Tujuan:</p>
+                <p className="font-bold text-primary text-lg">
+                  {targetAction === "graduate" ? "Lulus (Arsip Alumni)" : `Kelas ${targetClassName}`}
+                </p>
+              </div>
             </div>
 
-            <div className="rounded-xl border border-danger/30 bg-danger/5 p-4">
-              <p className="text-sm text-danger font-medium">
-                ⚠️ Pastikan data sudah benar sebelum melanjutkan. Siswa kelas XII yang diarsipkan akan diset status &quot;graduated&quot; dan tidak bisa login lagi.
-              </p>
-            </div>
+            {targetAction === "graduate" && (
+              <div className="rounded-xl border border-warning/30 bg-warning/10 p-4">
+                <p className="text-sm text-warning font-medium">
+                  ⚠️ Siswa yang diluluskan akan diarsipkan dan tidak bisa login lagi.
+                </p>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowConfirm(false)} disabled={isExecuting}>Batal</Button>
             <Button onClick={executePromotion} disabled={isExecuting} className="bg-primary hover:bg-primary/90">
-              {isExecuting ? <><Loader2 size={16} className="animate-spin" /> Memproses...</> : <><ArrowUpCircle size={16} /> Konfirmasi & Eksekusi</>}
+              {isExecuting ? <><Loader2 size={16} className="animate-spin" /> Memproses...</> : "Eksekusi"}
             </Button>
           </DialogFooter>
         </DialogContent>
